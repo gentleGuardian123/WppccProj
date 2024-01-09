@@ -15,7 +15,8 @@ using namespace seal;
 
 int main(int argc, char *argv[]) {
 
-     uint64_t number_of_items = 1 << 16;
+     uint8_t dim_of_items_number = 32;
+     uint64_t number_of_items = 1 << dim_of_items_number;
      uint64_t size_per_item = 1024; // in bytes
      uint32_t N = 4096;
      uint32_t logt = 20;
@@ -55,22 +56,31 @@ int main(int argc, char *argv[]) {
           << endl;
 
 
-     auto db(make_unique<uint8_t[]>(number_of_items * size_per_item));
-     auto db_copy(make_unique<uint8_t[]>(number_of_items * size_per_item));
+     auto db_a(make_unique<uint8_t[]>(number_of_items * size_per_item));
+     auto db_a_copy(make_unique<uint8_t[]>(number_of_items * size_per_item));
+     auto db_b(make_unique<uint8_t[]>(number_of_items * size_per_item));
+     auto db_b_copy(make_unique<uint8_t[]>(number_of_items * size_per_item));
+     auto db_c(make_unique<uint8_t[]>(number_of_items * size_per_item));
+     auto db_c_copy(make_unique<uint8_t[]>(number_of_items * size_per_item));
 
      random_device rd;
      // for (uint64_t i = 0; i < number_of_items; i++) {
      //   for (uint64_t j = 0; j < size_per_item; j++) {
      //     uint8_t val = rd() % 256;
-     //     db.get()[(i * size_per_item) + j] = val;
-     //     db_copy.get()[(i * size_per_item) + j] = val;
+     //     db_a.get()[(i * size_per_item) + j] = val;
+     //     db_a_copy.get()[(i * size_per_item) + j] = val;
      //   }
      // }
 
-
+     import_and_parse_data(db_a, "../../data/dataset_A.csv", dim_of_items_number);
+     import_and_parse_data(db_a_copy, "../../data/dataset_A.csv", dim_of_items_number);
+     import_and_parse_data(db_b, "../../data/dataset_B.csv", dim_of_items_number);
+     import_and_parse_data(db_b_copy, "../../data/dataset_B.csv", dim_of_items_number);
+     import_and_parse_data(db_c, "../../data/dataset_C.csv", dim_of_items_number);
+     import_and_parse_data(db_c_copy, "../../data/dataset_C.csv", dim_of_items_number);
 
      auto time_pre_s = high_resolution_clock::now();
-     server.set_database(move(db), number_of_items, size_per_item);
+     server.set_database(move(db_a), number_of_items, size_per_item);
      server.preprocess_database();
      auto time_pre_e = high_resolution_clock::now();
      auto time_pre_us =
@@ -79,7 +89,7 @@ int main(int argc, char *argv[]) {
 
 
      uint64_t ele_index =
-         rd() % number_of_items; // element in DB at random position
+         rd() % number_of_items; // element in db_a at random position
      uint64_t index = client.get_fv_index(ele_index);   // index of FV plaintext
      uint64_t offset = client.get_fv_offset(ele_index); // offset in FV plaintext
      cout << "Main: element index = " << ele_index << " from [0, "
@@ -135,9 +145,9 @@ int main(int argc, char *argv[]) {
      bool failed = false;
      
      for (uint32_t i = 0; i < size_per_item; i++) {
-       if (elems[i] != db_copy.get()[(ele_index * size_per_item) + i]) {
-         cout << "Main: elems " << (int)elems[i] << ", db "
-              << (int)db_copy.get()[(ele_index * size_per_item) + i] << endl;
+       if (elems[i] != db_a_copy.get()[(ele_index * size_per_item) + i]) {
+         cout << "Main: elems " << (int)elems[i] << ", db_a "
+              << (int)db_a_copy.get()[(ele_index * size_per_item) + i] << endl;
          cout << "Main: PIR result wrong at " << i << endl;
          failed = true;
        }
