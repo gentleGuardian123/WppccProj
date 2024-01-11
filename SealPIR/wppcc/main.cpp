@@ -18,6 +18,8 @@ int main(int argc, char *argv[]) {
   uint64_t size_per_item = 1024; // in bytes
   uint32_t N = 4096;
 
+  cout << number_of_items << endl;
+  cout << size_per_item << endl;
   // Recommended values: (logt, d) = (20, 2).
   uint32_t logt = 20;
   uint32_t d = 2;
@@ -75,17 +77,18 @@ int main(int argc, char *argv[]) {
 
   random_device rd;
   for (uint64_t i = 0; i < number_of_items; i++) {
-    for (uint64_t j = 0; j < size_per_item; j++) {
+     for (uint64_t j = 0; j < size_per_item; j++) {
       uint8_t val = rd() % 256;
       db.get()[(i * size_per_item) + j] = val;
       db_copy.get()[(i * size_per_item) + j] = val;
     }
   }
-
   // Measure database setup
   auto time_pre_s = high_resolution_clock::now();
-  server.set_database(move(db), number_of_items, size_per_item);
+  server.set_database(move(db), number_of_items, size_per_item);  
+
   server.preprocess_database();
+
   auto time_pre_e = high_resolution_clock::now();
   auto time_pre_us =
       duration_cast<microseconds>(time_pre_e - time_pre_s).count();

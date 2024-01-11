@@ -36,6 +36,14 @@ public:
   void simple_set(std::uint64_t index, seal::Plaintext pt);
   seal::Ciphertext simple_query(std::uint64_t index);
   void set_one_ct(seal::Ciphertext one);
+  //生成随机数
+  void refresh_and_set_add_rand_vec() ;
+  void gen_add_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2,int i);
+  std::vector<std::uint64_t>& getAddRandVec1();
+  std::vector<std::uint64_t>& getAddRandVec2();
+  std::vector<std::uint64_t>& getAddRandVec3();
+  std::vector<std::uint64_t>& getAddRandVec4();
+
 
 private:
   seal::EncryptionParameters enc_params_; // SEAL parameters
@@ -46,6 +54,10 @@ private:
   std::unique_ptr<seal::Evaluator> evaluator_;
   std::unique_ptr<seal::BatchEncoder> encoder_;
   std::shared_ptr<seal::SEALContext> context_;
+  std::vector<std::uint64_t> add_rand_vec1;  // 成员变量，用于存储生成的随机数1 r1
+  std::vector<std::uint64_t> add_rand_vec2;  // 成员变量，用于存储生成的随机数2 r2
+  std::vector<std::uint64_t> add_rand_vec3;  // 成员变量，用于存储生成的随机数-1-2 r3
+  std::vector<std::uint64_t> add_rand_vec4;  // 成员变量，用于存储生成的随机数(12)^-1 r4
 
   // This is only used for simple_query
   seal::Ciphertext one_;
