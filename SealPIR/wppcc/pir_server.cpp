@@ -265,7 +265,19 @@ PirReply PIRServer::generate_reply(PirQuery &query, uint32_t client_id) {
     }
 
     if (i == nvec.size() - 1) {
+      Plaintext random_plaintext;
+      random_plaintext = random();
+      for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
+        Plaintext random_plaintext;
+        random_plaintext = random();
+        evaluator_->multiply_plain_inplace(intermediateCtxts[jj], random_plaintext);
+
+        evaluator_->mod_switch_to_next_inplace(intermediateCtxts[jj]);
+        evaluator_->multiply_plain_inplace(intermediateCtxts[jj], random_plaintext);
+        evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
+      }
       return intermediateCtxts;
+
     } else {
       intermediate_plain.clear();
       intermediate_plain.reserve(pir_params_.expansion_ratio * product);
