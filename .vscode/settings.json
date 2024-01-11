@@ -1,5 +1,6 @@
 {
     "files.associations": {
+<<<<<<< HEAD
         "array": "cpp",
         "atomic": "cpp",
         "bit": "cpp",
@@ -59,5 +60,8 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "typeinfo": "cpp"
+=======
+        "*.tcc": "cpp"
+>>>>>>> main
     }
 }

@@ -36,14 +36,12 @@ public:
   void simple_set(std::uint64_t index, seal::Plaintext pt);
   seal::Ciphertext simple_query(std::uint64_t index);
   void set_one_ct(seal::Ciphertext one);
-  //生成随机数
   void refresh_and_set_add_rand_vec(std::vector<PirQuery> &query) ;
   void gen_add_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2,int i);
   std::vector<std::uint64_t>& getAddRandVec1();
   std::vector<std::uint64_t>& getAddRandVec2();
   std::vector<std::uint64_t>& getAddRandVec3();
   std::vector<std::uint64_t>& getAddRandVec4();
-
 
 private:
   seal::EncryptionParameters enc_params_; // SEAL parameters

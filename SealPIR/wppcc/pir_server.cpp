@@ -13,6 +13,7 @@ PIRServer::PIRServer(const EncryptionParameters &enc_params,
   evaluator_ = make_unique<Evaluator>(*context_);
   encoder_ = make_unique<BatchEncoder>(*context_);
 }
+
 //// 预处理数据库，将每个元素转换为NTT域表示
 void PIRServer::preprocess_database() {
   if (!is_db_preprocessed_) {
@@ -35,6 +36,7 @@ void PIRServer::set_database(unique_ptr<vector<Plaintext>> &&db) {
   db_ = move(db);
   is_db_preprocessed_ = false;
 }
+
 // 使用字节数组设置数据库
 void PIRServer::set_database(const std::unique_ptr<const uint8_t[]> &bytes,
                              uint64_t ele_num, uint64_t ele_size) {
