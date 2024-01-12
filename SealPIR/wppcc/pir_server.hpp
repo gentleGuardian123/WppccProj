@@ -24,6 +24,16 @@ public:
 
   PirQuery deserialize_query(std::stringstream &stream);
   PirReply generate_reply(PirQuery &query, std::uint32_t client_id);
+
+  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
+  PirReply generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
+  std::vector<PirQuery> BatchPirQuery;
+  std::vector<seal::Plaintext> add_rand_vec1;
+  std::vector<seal::Plaintext> add_rand_vec2;
+  std::vector<seal::Plaintext> add_rand_vec3;
+  std::vector<seal::Plaintext> add_rand_vec4;
+  std::vector<PirReply> BatchPirReply;
+  std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &BatchPirQuery1, std::vector<PirQuery> &BatchPirQuery2,std::uint32_t client_id);
   // Serializes the reply into the provided stream and returns the number of
   // bytes written
   int serialize_reply(PirReply &reply, std::stringstream &stream);
