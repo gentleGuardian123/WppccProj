@@ -25,6 +25,17 @@ struct PirParams {
   std::uint32_t slot_count;
 };
 
+struct Index {
+  std::uint64_t index_value;
+  FvInfo *fv_info_ptr;
+};
+
+struct FvInfo {
+  std::uint64_t index_value;
+  std::uint64_t reply_id;
+  std::uint64_t fv_offset;
+};
+
 void gen_encryption_params(std::uint32_t N,    // degree of polynomial
                            std::uint32_t logt, // bits of plaintext coefficient
                            seal::EncryptionParameters &enc_params);

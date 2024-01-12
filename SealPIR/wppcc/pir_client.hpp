@@ -3,6 +3,7 @@
 #include "pir.hpp"
 #include <memory>
 #include <vector>
+#include <list>
 
 using namespace std;
 
@@ -10,6 +11,9 @@ class PIRClient {
 public:
   PIRClient(const seal::EncryptionParameters &encparms,
             const PirParams &pirparams);
+  std::vector<PirQuery> generate_batch_query(std::vector<std::uint64_t> &desired_index_vec, 
+                                             std::vector<Index> &index_vec_with_fv,
+                                             std::list<FvInfo> &fv_info_list_dest);
 
   PirQuery generate_query(std::uint64_t desiredIndex);
   // Serializes the query into the provided stream and returns number of bytes
@@ -22,6 +26,9 @@ public:
   std::vector<uint64_t> extract_coeffs(seal::Plaintext pt,
                                        std::uint64_t offset);
   std::vector<uint8_t> extract_bytes(seal::Plaintext pt, std::uint64_t offset);
+
+  std::vector<std::vector<uint8_t>> decode_batch_reply(std::vector<PirReply> &batch_reply, 
+                                                       std::vector<Index> &elem_index_with_ptr);
 
   std::vector<uint8_t> decode_reply(PirReply &reply, uint64_t offset);
 
