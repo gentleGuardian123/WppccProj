@@ -1,2 +1,3 @@
-SealPIR/build
-SealPIR/bin
+SealPIR/build/
+SealPIR/bin/
+.vscode/

@@ -14,6 +14,7 @@ PIRServer::PIRServer(const EncryptionParameters &enc_params,
   encoder_ = make_unique<BatchEncoder>(*context_);
 }
 
+//// 预处理数据库，将每个元素转换为NTT域表示
 void PIRServer::preprocess_database() {
   if (!is_db_preprocessed_) {
 
@@ -26,7 +27,7 @@ void PIRServer::preprocess_database() {
   }
 }
 
-// Server takes over ownership of db and will free it when it exits
+// 将拥有数据库所有权的操作交给服务器，并在退出时释放它
 void PIRServer::set_database(unique_ptr<vector<Plaintext>> &&db) {
   if (!db) {
     throw invalid_argument("db cannot be null");
@@ -36,6 +37,7 @@ void PIRServer::set_database(unique_ptr<vector<Plaintext>> &&db) {
   is_db_preprocessed_ = false;
 }
 
+// 使用字节数组设置数据库
 void PIRServer::set_database(const std::unique_ptr<const uint8_t[]> &bytes,
                              uint64_t ele_num, uint64_t ele_size) {
 
@@ -439,4 +441,55 @@ Ciphertext PIRServer::simple_query(uint64_t index) {
 void PIRServer::set_one_ct(Ciphertext one) {
   one_ = one;
   evaluator_->transform_to_ntt_inplace(one_);
+}
+
+void PIRServer::gen_add_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2,int i) {
+    // 设置随机数生成器，使用随机设备作为种子
+    auto now = std::chrono::system_clock::now();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    // 使用时间戳作为种子来初始化随机数生成器
+    std::mt19937 gen(static_cast<std::uint64_t>(timestamp)+i);
+    std::uniform_int_distribution<std::uint64_t> dis(1, std::numeric_limits<std::uint64_t>::max());
+
+    // 生成两个随机数，并分别赋值给 dest_rand1 和 dest_rand2
+    dest_rand1 = dis(gen);
+    dest_rand2 = dis(gen);
+}
+
+void PIRServer:: refresh_and_set_add_rand_vec(std::vector<PirQuery> &query)
+{
+    int m = query.size();
+    std::uint64_t dest_rand1;
+    std::uint64_t dest_rand2;
+    // 初始化并为 add_rand_vec1 赋予 m 个随机数
+    add_rand_vec1.clear();
+    add_rand_vec1.reserve(m);
+    add_rand_vec2.clear();
+    add_rand_vec2.reserve(m);
+    for (int i = 0; i < m; i++) {
+        gen_add_rand(dest_rand1,dest_rand2,i);
+        add_rand_vec1.push_back(dest_rand1%enc_params_.plain_modulus().value());
+        add_rand_vec2.push_back(dest_rand2%enc_params_.plain_modulus().value());
+        add_rand_vec3.push_back((-add_rand_vec1[i]-add_rand_vec2[i]+2*enc_params_.plain_modulus().value())%enc_params_.plain_modulus().value());
+        add_rand_vec4.push_back(invert_mod((dest_rand1%enc_params_.plain_modulus().value())*(dest_rand1%enc_params_.plain_modulus().value()), enc_params_.plain_modulus()));
+        cout <<"enc_params_.plain_modulus()";
+        cout << enc_params_.plain_modulus().value() <<endl;
+    }
+
+}
+
+std::vector<std::uint64_t> &PIRServer::getAddRandVec1() {
+    return add_rand_vec1;
+}
+
+std::vector<std::uint64_t> &PIRServer::getAddRandVec2() {
+    return add_rand_vec2;
+}
+
+std::vector<std::uint64_t> &PIRServer::getAddRandVec3() {
+    return add_rand_vec3;
+}
+
+std::vector<std::uint64_t> &PIRServer::getAddRandVec4() {
+    return add_rand_vec4;
 }

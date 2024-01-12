@@ -2,6 +2,7 @@
 #include "pir_client.hpp"
 #include "pir_server.hpp"
 #include "imp_data.hpp"
+
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -14,7 +15,6 @@ using namespace std;
 using namespace seal;
 
 int main(int argc, char *argv[]) {
-
      uint8_t dim_of_items_number = 32;
      uint64_t number_of_items = 1 << dim_of_items_number;
      uint64_t size_per_item = 1024; // in bytes
