@@ -36,6 +36,7 @@ public:
   void simple_set(std::uint64_t index, seal::Plaintext pt);
   seal::Ciphertext simple_query(std::uint64_t index);
   void set_one_ct(seal::Ciphertext one);
+
   void refresh_and_set_add_rand_vec(std::vector<PirQuery> &query) ;
   void gen_add_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2,int i);
   std::vector<std::uint64_t>& getAddRandVec1();
