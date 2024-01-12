@@ -53,7 +53,7 @@ public:
   std::vector<std::uint64_t>& getAddRandVec2();
   std::vector<std::uint64_t>& getAddRandVec3();
   std::vector<std::uint64_t>& getAddRandVec4();
-
+  
 private:
   seal::EncryptionParameters enc_params_; // SEAL parameters
   PirParams pir_params_;                  // PIR parameters

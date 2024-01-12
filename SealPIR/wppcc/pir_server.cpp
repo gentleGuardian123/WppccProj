@@ -495,273 +495,30 @@ std::vector<std::uint64_t> &PIRServer::getAddRandVec4() {
 }
 
 PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i){
-  vector<uint64_t> nvec = pir_params_.nvec;
-  uint64_t product = 1;
+  PirReply reply = generate_reply(query, client_id);
 
-  for (uint32_t i = 0; i < nvec.size(); i++) {
-    product *= nvec[i];
+  for (uint32_t jj = 0; jj < reply.size(); jj++) {
+    //查询手机号总数，随机数add_rand_vec与查询结果相加
+    Plaintext pt(add_rand_vec3[Batch_i]);
+    evaluator_->add_plain_inplace(reply[jj], pt);
   }
 
-  auto coeff_count = enc_params_.poly_modulus_degree();
-
-  vector<Plaintext> *cur = db_.get();
-  vector<Plaintext> intermediate_plain; // decompose....
-
-  auto pool = MemoryManager::GetPool();
-
-  int N = enc_params_.poly_modulus_degree();
-
-  int logt = floor(log2(enc_params_.plain_modulus().value()));
-
-  for (uint32_t i = 0; i < nvec.size(); i++) {
-    cout << "Server: " << i + 1 << "-th recursion level started " << endl;
-
-    vector<Ciphertext> expanded_query;
-
-    uint64_t n_i = nvec[i];
-    cout << "Server: n_i = " << n_i << endl;
-    cout << "Server: expanding " << query[i].size() << " query ctxts" << endl;
-    for (uint32_t j = 0; j < query[i].size(); j++) {
-      uint64_t total = N;
-      if (j == query[i].size() - 1) {
-        total = n_i % N;
-      }
-      cout << "-- expanding one query ctxt into " << total << " ctxts " << endl;
-      vector<Ciphertext> expanded_query_part =
-          expand_query(query[i][j], total, client_id);
-      expanded_query.insert(
-          expanded_query.end(),
-          std::make_move_iterator(expanded_query_part.begin()),
-          std::make_move_iterator(expanded_query_part.end()));
-      expanded_query_part.clear();
-    }
-    cout << "Server: expansion done " << endl;
-    if (expanded_query.size() != n_i) {
-      cout << " size mismatch!!! " << expanded_query.size() << ", " << n_i
-           << endl;
-    }
-
-    // Transform expanded query to NTT, and ...
-    for (uint32_t jj = 0; jj < expanded_query.size(); jj++) {
-      evaluator_->transform_to_ntt_inplace(expanded_query[jj]);
-    }
-
-    // Transform plaintext to NTT. If database is pre-processed, can skip
-    if ((!is_db_preprocessed_) || i > 0) {
-      for (uint32_t jj = 0; jj < cur->size(); jj++) {
-        evaluator_->transform_to_ntt_inplace((*cur)[jj],
-                                             context_->first_parms_id());
-      }
-    }
-
-    for (uint64_t k = 0; k < product; k++) {
-      if ((*cur)[k].is_zero()) {
-        cout << k + 1 << "/ " << product << "-th ptxt = 0 " << endl;
-      }
-    }
-
-    product /= n_i;
-
-    vector<Ciphertext> intermediateCtxts(product);
-    Ciphertext temp;
-
-    for (uint64_t k = 0; k < product; k++) {
-
-      evaluator_->multiply_plain(expanded_query[0], (*cur)[k],
-                                 intermediateCtxts[k]);
-
-      for (uint64_t j = 1; j < n_i; j++) {
-        evaluator_->multiply_plain(expanded_query[j], (*cur)[k + j * product],
-                                   temp);
-        evaluator_->add_inplace(intermediateCtxts[k],
-                                temp); // Adds to first component.
-      }
-    }
-
-    for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
-      evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
-      // print intermediate ctxts?
-      // cout << "const term of ctxt " << jj << " = " <<
-      // intermediateCtxts[jj][0] << endl;
-    }
-
-    if (i == nvec.size() - 1) {
-      for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
-        //查询手机号总数，随机数add_rand_vec与查询结果相加
-        evaluator_->add_plain_inplace(intermediateCtxts[jj], add_rand_vec3[Batch_i]);
-      }
-
-      return intermediateCtxts;
-
-    } else {
-      intermediate_plain.clear();
-      intermediate_plain.reserve(pir_params_.expansion_ratio * product);
-      cur = &intermediate_plain;
-
-      for (uint64_t rr = 0; rr < product; rr++) {
-        EncryptionParameters parms;
-        if (pir_params_.enable_mswitching) {
-          evaluator_->mod_switch_to_inplace(intermediateCtxts[rr],
-                                            context_->last_parms_id());
-          parms = context_->last_context_data()->parms();
-        } else {
-          parms = context_->first_context_data()->parms();
-        }
-
-        vector<Plaintext> plains =
-            decompose_to_plaintexts(parms, intermediateCtxts[rr]);
-
-        for (uint32_t jj = 0; jj < plains.size(); jj++) {
-          intermediate_plain.emplace_back(plains[jj]);
-        }
-      }
-      product = intermediate_plain.size(); // multiply by expansion rate.
-    }
-    cout << "Server: " << i + 1 << "-th recursion level finished " << endl;
-    cout << endl;
-  }
-  cout << "reply generated!  " << endl;
-  // This should never get here
-  assert(0);
-  vector<Ciphertext> fail(1);
-  return fail;
+  return reply;
 }
 
 PirReply PIRServer::generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i){
-  vector<uint64_t> nvec = pir_params_.nvec;
-  uint64_t product = 1;
+  PirReply reply = generate_reply(query, client_id);
 
-  for (uint32_t i = 0; i < nvec.size(); i++) {
-    product *= nvec[i];
+  for (uint32_t jj = 0; jj < reply.size(); jj++) {
+    //查询是否在黑名单里，随机数add_rand_vec4与查询结果相乘
+    Plaintext pt(add_rand_vec4[Batch_i]);
+    evaluator_->multiply_plain_inplace(reply[jj], pt);
+    evaluator_->mod_switch_to_next_inplace(reply[jj]);
+    evaluator_->multiply_plain_inplace(reply[jj], pt);
+    evaluator_->transform_from_ntt_inplace(reply[jj]);
   }
 
-  auto coeff_count = enc_params_.poly_modulus_degree();
-
-  vector<Plaintext> *cur = db_.get();
-  vector<Plaintext> intermediate_plain; // decompose....
-
-  auto pool = MemoryManager::GetPool();
-
-  int N = enc_params_.poly_modulus_degree();
-
-  int logt = floor(log2(enc_params_.plain_modulus().value()));
-
-  for (uint32_t i = 0; i < nvec.size(); i++) {
-    cout << "Server: " << i + 1 << "-th recursion level started " << endl;
-
-    vector<Ciphertext> expanded_query;
-
-    uint64_t n_i = nvec[i];
-    cout << "Server: n_i = " << n_i << endl;
-    cout << "Server: expanding " << query[i].size() << " query ctxts" << endl;
-    for (uint32_t j = 0; j < query[i].size(); j++) {
-      uint64_t total = N;
-      if (j == query[i].size() - 1) {
-        total = n_i % N;
-      }
-      cout << "-- expanding one query ctxt into " << total << " ctxts " << endl;
-      vector<Ciphertext> expanded_query_part =
-          expand_query(query[i][j], total, client_id);
-      expanded_query.insert(
-          expanded_query.end(),
-          std::make_move_iterator(expanded_query_part.begin()),
-          std::make_move_iterator(expanded_query_part.end()));
-      expanded_query_part.clear();
-    }
-    cout << "Server: expansion done " << endl;
-    if (expanded_query.size() != n_i) {
-      cout << " size mismatch!!! " << expanded_query.size() << ", " << n_i
-           << endl;
-    }
-
-    // Transform expanded query to NTT, and ...
-    for (uint32_t jj = 0; jj < expanded_query.size(); jj++) {
-      evaluator_->transform_to_ntt_inplace(expanded_query[jj]);
-    }
-
-    // Transform plaintext to NTT. If database is pre-processed, can skip
-    if ((!is_db_preprocessed_) || i > 0) {
-      for (uint32_t jj = 0; jj < cur->size(); jj++) {
-        evaluator_->transform_to_ntt_inplace((*cur)[jj],
-                                             context_->first_parms_id());
-      }
-    }
-
-    for (uint64_t k = 0; k < product; k++) {
-      if ((*cur)[k].is_zero()) {
-        cout << k + 1 << "/ " << product << "-th ptxt = 0 " << endl;
-      }
-    }
-
-    product /= n_i;
-
-    vector<Ciphertext> intermediateCtxts(product);
-    Ciphertext temp;
-
-    for (uint64_t k = 0; k < product; k++) {
-
-      evaluator_->multiply_plain(expanded_query[0], (*cur)[k],
-                                 intermediateCtxts[k]);
-
-      for (uint64_t j = 1; j < n_i; j++) {
-        evaluator_->multiply_plain(expanded_query[j], (*cur)[k + j * product],
-                                   temp);
-        evaluator_->add_inplace(intermediateCtxts[k],
-                                temp); // Adds to first component.
-      }
-    }
-
-    for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
-      evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
-      // print intermediate ctxts?
-      // cout << "const term of ctxt " << jj << " = " <<
-      // intermediateCtxts[jj][0] << endl;
-    }
-
-    if (i == nvec.size() - 1) {
-      for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
-        //查询是否在黑名单里，随机数add_rand_vec4与查询结果相乘
-        evaluator_->multiply_plain_inplace(intermediateCtxts[jj], add_rand_vec4[Batch_i]);
-        evaluator_->mod_switch_to_next_inplace(intermediateCtxts[jj]);
-        evaluator_->multiply_plain_inplace(intermediateCtxts[jj], add_rand_vec4[Batch_i]);
-        evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
-        
-      }
-
-      return intermediateCtxts;
-
-    } else {
-      intermediate_plain.clear();
-      intermediate_plain.reserve(pir_params_.expansion_ratio * product);
-      cur = &intermediate_plain;
-
-      for (uint64_t rr = 0; rr < product; rr++) {
-        EncryptionParameters parms;
-        if (pir_params_.enable_mswitching) {
-          evaluator_->mod_switch_to_inplace(intermediateCtxts[rr],
-                                            context_->last_parms_id());
-          parms = context_->last_context_data()->parms();
-        } else {
-          parms = context_->first_context_data()->parms();
-        }
-
-        vector<Plaintext> plains =
-            decompose_to_plaintexts(parms, intermediateCtxts[rr]);
-
-        for (uint32_t jj = 0; jj < plains.size(); jj++) {
-          intermediate_plain.emplace_back(plains[jj]);
-        }
-      }
-      product = intermediate_plain.size(); // multiply by expansion rate.
-    }
-    cout << "Server: " << i + 1 << "-th recursion level finished " << endl;
-    cout << endl;
-  }
-  cout << "reply generated!  " << endl;
-  // This should never get here
-  assert(0);
-  vector<Ciphertext> fail(1);
-  return fail;
+  return reply;
 }
 
 vector<PirReply> PIRServer::gen_batch_reply(std::vector<PirQuery> &BatchPirQuery1, std::vector<PirQuery> &BatchPirQuery2,std::uint32_t client_id){
