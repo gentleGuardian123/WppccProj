@@ -25,15 +25,6 @@ public:
   PirQuery deserialize_query(std::stringstream &stream);
   PirReply generate_reply(PirQuery &query, std::uint32_t client_id);
 
-  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
-  PirReply generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
-  std::vector<PirQuery> BatchPirQuery;
-  std::vector<seal::Plaintext> add_rand_vec1;
-  std::vector<seal::Plaintext> add_rand_vec2;
-  std::vector<seal::Plaintext> add_rand_vec3;
-  std::vector<seal::Plaintext> add_rand_vec4;
-  std::vector<PirReply> BatchPirReply;
-  std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &BatchPirQuery1, std::vector<PirQuery> &BatchPirQuery2,std::uint32_t client_id);
   // Serializes the reply into the provided stream and returns the number of
   // bytes written
   int serialize_reply(PirReply &reply, std::stringstream &stream);
@@ -47,12 +38,15 @@ public:
   seal::Ciphertext simple_query(std::uint64_t index);
   void set_one_ct(seal::Ciphertext one);
 
-  void refresh_and_set_add_rand_vec(std::vector<PirQuery> &query) ;
-  void gen_add_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2,int i);
-  std::vector<std::uint64_t>& getAddRandVec1();
-  std::vector<std::uint64_t>& getAddRandVec2();
-  std::vector<std::uint64_t>& getAddRandVec3();
-  std::vector<std::uint64_t>& getAddRandVec4();
+  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
+  PirReply generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
+  std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &BatchPirQuery1, std::vector<PirQuery> &BatchPirQuery2,std::uint32_t client_id);
+  void refresh_and_set_rand_vec(std::vector<PirQuery> &query) ;
+  void gen_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2, uint64_t i);
+  std::vector<std::uint64_t>& get_rand_vec_1();
+  std::vector<std::uint64_t>& get_rand_vec_2();
+  std::vector<std::uint64_t>& get_rand_vec_3();
+  std::vector<std::uint64_t>& get_rand_vec_4();
   
 private:
   seal::EncryptionParameters enc_params_; // SEAL parameters
@@ -63,10 +57,10 @@ private:
   std::unique_ptr<seal::Evaluator> evaluator_;
   std::unique_ptr<seal::BatchEncoder> encoder_;
   std::shared_ptr<seal::SEALContext> context_;
-  std::vector<std::uint64_t> add_rand_vec1;  // 成员变量，用于存储生成的随机数1 r1
-  std::vector<std::uint64_t> add_rand_vec2;  // 成员变量，用于存储生成的随机数2 r2
-  std::vector<std::uint64_t> add_rand_vec3;  // 成员变量，用于存储生成的随机数-1-2 r3
-  std::vector<std::uint64_t> add_rand_vec4;  // 成员变量，用于存储生成的随机数(12)^-1 r4
+  std::vector<std::uint64_t> rand_vec1_;  // 成员变量，用于存储生成的随机数1 r1
+  std::vector<std::uint64_t> rand_vec2_;  // 成员变量，用于存储生成的随机数2 r2
+  std::vector<std::uint64_t> rand_vec3_;  // 成员变量，用于存储生成的随机数-1-2 r3
+  std::vector<std::uint64_t> rand_vec4_;  // 成员变量，用于存储生成的随机数(12)^-1 r4
 
   // This is only used for simple_query
   seal::Ciphertext one_;

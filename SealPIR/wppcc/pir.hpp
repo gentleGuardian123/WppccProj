@@ -25,15 +25,15 @@ struct PirParams {
   std::uint32_t slot_count;
 };
 
-struct Index {
-  std::uint64_t index_value;
-  FvInfo *fv_info_ptr;
-};
-
 struct FvInfo {
   std::uint64_t index_value;
   std::uint64_t reply_id;
   std::uint64_t fv_offset;
+};
+
+struct Index {
+  std::uint64_t index_value;
+  FvInfo *fv_info_ptr;
 };
 
 void gen_encryption_params(std::uint32_t N,    // degree of polynomial
