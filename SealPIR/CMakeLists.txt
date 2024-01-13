@@ -4,9 +4,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(SealPIR VERSION 2.2 LANGUAGES CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-add_subdirectory(src)
 
 add_subdirectory(wppcc)
 
 enable_testing()
-add_subdirectory(test)
+add_subdirectory(wppcc_test)

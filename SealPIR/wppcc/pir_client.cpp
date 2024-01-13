@@ -71,35 +71,47 @@ int PIRClient::generate_serialized_query(uint64_t desiredIndex,
 
 vector<PirQuery> PIRClient::generate_batch_query(vector<uint64_t> &desired_index_vec, vector<Index> &elem_index_with_ptr, list<FvInfo> &fv_info_list) {
 
-  vector<PirQuery> batch_pir_query;
-  vector<uint64_t> batch_fv_index;
+    vector<PirQuery> batch_pir_query;
+    vector<uint64_t> batch_fv_index;
+/* 
+    uint64_t i = 0UL;
+    for (auto fv_info : fv_info_list) {
+        fv_info.index_value = desired_index_vec[i];
+        elem_index_with_ptr[i].index_value = desired_index_vec[i];
+        elem_index_with_ptr[i++].fv_info_ptr = &fv_info;
+    }
+ */
+  
+    for (uint64_t i = 0UL; i < desired_index_vec.size(); i ++ ) {
+        FvInfo fv_info;
+        fv_info.index_value = desired_index_vec[i];
+        fv_info_list.push_back(fv_info);
+        Index index;
+        index.index_value = desired_index_vec[i];
+        index.fv_info_ptr = &fv_info_list.back();
+        elem_index_with_ptr.push_back(index);
+    }
 
-  uint64_t i = 0UL;
-  for (auto fv_info : fv_info_list) {
-      fv_info.index_value = desired_index_vec[i];
-      elem_index_with_ptr[i].index_value = desired_index_vec[i];
-      elem_index_with_ptr[i++].fv_info_ptr = &fv_info;
-  }
+    fv_info_list.sort([](const FvInfo &_f1, const FvInfo &_f2) { return (_f1.index_value) < _f2.index_value; });
 
-  fv_info_list.sort([](const FvInfo &_f1, const FvInfo &_f2) {return (_f1.index_value) < _f2.index_value; });
+    uint64_t first_fv_index = get_fv_index(fv_info_list.front().index_value);
+    uint64_t reply_id = 0UL;
+    batch_fv_index.push_back(first_fv_index);
+    batch_pir_query.push_back(generate_query(first_fv_index));
 
-  uint64_t first_fv_index = get_fv_index(fv_info_list.front().index_value);
-  uint64_t reply_id = 0UL;
-  batch_fv_index.push_back(first_fv_index);
-  batch_pir_query.push_back(generate_query(first_fv_index));
+    for (auto &fv_info: fv_info_list) {
+        uint64_t fv_index = get_fv_index(fv_info.index_value);
+        fv_info.fv_offset = get_fv_offset(fv_info.index_value);
+        if (fv_index > batch_fv_index.back()) {
+            batch_fv_index.push_back(fv_index);
+            batch_pir_query.push_back(generate_query(fv_index));
+            fv_info.reply_id = ++reply_id;
+        } else {
+            fv_info.reply_id = reply_id;
+        }
+    }
 
-  for (auto fv_info: fv_info_list) {
-      uint64_t fv_index = get_fv_index(fv_info.index_value);
-      fv_info.fv_offset = get_fv_offset(fv_info.index_value);
-      if (fv_index > batch_fv_index.back()) {
-          batch_fv_index.push_back(fv_index);
-          fv_info.reply_id = ++reply_id;
-      } else {
-          fv_info.reply_id = reply_id;
-      }
-  }
-
-  return batch_pir_query;
+    return batch_pir_query;
   
 }
 
@@ -114,9 +126,9 @@ PirQuery PIRClient::generate_query(uint64_t desiredIndex) {
   for (uint32_t i = 0; i < indices_.size(); i++) {
     uint32_t num_ptxts = ceil((pir_params_.nvec[i] + 0.0) / N);
     // initialize result.
-    cout << "Client: index " << i + 1 << "/ " << indices_.size() << " = "
-         << indices_[i] << endl;
-    cout << "Client: number of ctxts needed for query = " << num_ptxts << endl;
+    // cout << "Client: index " << i + 1 << "/ " << indices_.size() << " = "
+    //      << indices_[i] << endl;
+    // cout << "Client: number of ctxts needed for query = " << num_ptxts << endl;
 
     for (uint32_t j = 0; j < num_ptxts; j++) {
       pt.set_zero();
@@ -129,7 +141,7 @@ PirQuery PIRClient::generate_query(uint64_t desiredIndex) {
         }
         uint64_t log_total = ceil(log2(total));
 
-        cout << "Client: Inverting " << pow(2, log_total) << endl;
+        // cout << "Client: Inverting " << pow(2, log_total) << endl;
         pt[real_index] =
             invert_mod(pow(2, log_total), enc_params_.plain_modulus());
       }
@@ -162,16 +174,17 @@ Plaintext PIRClient::decrypt(Ciphertext ct) {
 }
 
 vector<vector<uint8_t>> PIRClient::decode_batch_reply(vector<PirReply> &batch_reply, vector<Index> &elem_index_with_ptr) {
-  vector<vector<uint8_t>> elems;
+    vector<vector<uint8_t>> elems;
 
-  for (auto it = elem_index_with_ptr.begin(); it < elem_index_with_ptr.end(); it++) {
-      uint64_t reply_id = it->fv_info_ptr->reply_id;
-      uint64_t offset = it->fv_info_ptr->fv_offset;
-      PirReply reply = batch_reply[reply_id];
-      elems.push_back(decode_reply(reply, offset));
-  }
+    // cout << "*" << endl;
+    for (auto it = elem_index_with_ptr.begin(); it < elem_index_with_ptr.end(); it++) {
+        uint64_t reply_id = it->fv_info_ptr->reply_id;
+        uint64_t offset = it->fv_info_ptr->fv_offset;
+        PirReply reply = batch_reply[reply_id];
+        elems.push_back(decode_reply(reply, offset));
+    }
 
-  return elems;
+    return elems;
 }
 
 vector<uint8_t> PIRClient::decode_reply(PirReply &reply, uint64_t offset) {
