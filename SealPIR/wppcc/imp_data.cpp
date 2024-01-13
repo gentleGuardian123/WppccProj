@@ -45,13 +45,16 @@ void import_and_parse_data(std::unique_ptr<uint8_t[]> &db, const string csv_name
             db.get()[indice + 1UL] = 1;
         }
 
-        cout << hex_indice.str() << endl;
-        cout << indice << endl;
 
-        if (! stoi(row[2], nullptr, 2) ) {
-            cout << "Number of phone account:\t" << row[1] << endl;
-            cout << "Whether in blacklist:\t\t" << row[2] << endl;
-            cout << "Combined data:\t\t\t" << uint32_t(db.get()[indice]) << endl;
+        if ( stoi(row[2], nullptr, 2) ) {
+            cout << "Hex number of the high 32-bit:\t\t" <<  hex_indice.str() << endl;
+            cout << "Hex number of the `x`(high 31-bit):\t" << hex << indice << endl;
+            cout << "Oct number of the `x`(high 31-bit):\t" << indice << endl;
+            cout << "Number of phone account:\t\t" << row[1] << endl;
+            cout << "Whether in blacklist:\t\t\t" << row[2] << endl;
+            cout << "data at `x`||0:\t\t\t\t" << uint32_t(db.get()[indice]) << endl;
+            cout << "data at `x`||1:\t\t\t\t" << uint32_t(db.get()[indice + 1UL]) << endl;
+            cout << endl;
         }
 
         if (++count == number_of_items)

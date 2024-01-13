@@ -5,7 +5,7 @@ using namespace std;
 
 int main()
 {
-    uint8_t dim_of_items_number = 8;
+    uint8_t dim_of_items_number = 32;
     uint64_t number_of_items = 1UL << dim_of_items_number;
     uint64_t size_per_item = 1; // byte
 
