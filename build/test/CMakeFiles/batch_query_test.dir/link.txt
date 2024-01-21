@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/batch_query_test.dir/batch_query_test.cpp.o -o ../../bin/batch_query_test  ../src/libpir.a ../../libs/lib/libseal-4.1.a 

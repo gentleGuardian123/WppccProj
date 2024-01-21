@@ -1,0 +1,2 @@
+/usr/bin/ar qc libwppcc.a CMakeFiles/wppcc.dir/pir.cpp.o CMakeFiles/wppcc.dir/pir_client.cpp.o CMakeFiles/wppcc.dir/pir_server.cpp.o
+/usr/bin/ranlib libwppcc.a

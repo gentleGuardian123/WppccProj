@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/wppcc_main.dir/main.cpp.o -o ../../bin/wppcc_main  libimp_data.a libwppcc.a ../../libs/lib/libseal-4.1.a 

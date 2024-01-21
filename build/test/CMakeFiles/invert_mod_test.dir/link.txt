@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/invert_mod_test.dir/invert_mod_test.cpp.o -o ../../bin/invert_mod_test  ../src/libpir.a ../../libs/lib/libseal-4.1.a 

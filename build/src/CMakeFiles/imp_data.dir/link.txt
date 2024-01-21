@@ -1,0 +1,2 @@
+/usr/bin/ar qc libimp_data.a CMakeFiles/imp_data.dir/imp_data.cpp.o
+/usr/bin/ranlib libimp_data.a
