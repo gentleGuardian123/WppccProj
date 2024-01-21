@@ -40,7 +40,7 @@ public:
 
   PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
   PirReply generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
-  std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &BatchPirQuery1, std::vector<PirQuery> &BatchPirQuery2,std::uint32_t client_id);
+  std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &batch_pir_query, std::uint32_t client_id);
   void refresh_and_set_rand_vec(std::vector<PirQuery> &query) ;
   void gen_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2, uint64_t i);
   std::vector<std::uint64_t>& get_rand_vec_1();

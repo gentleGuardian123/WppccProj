@@ -520,18 +520,11 @@ PirReply PIRServer::generate_reply_with_mul_confusion(PirQuery &query, std::uint
   return reply;
 }
 
-vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query1, vector<PirQuery> &batch_pir_query2, uint32_t client_id){
+vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, uint32_t client_id){
   vector<PirReply> batch_pir_reply;
 
-  // 处理 batch_pir_query1
-  for (uint32_t i = 0; i < batch_pir_query1.size(); i++) {
-      PirReply reply = generate_reply_with_add_confusion(batch_pir_query1[i], client_id, i);
-      batch_pir_reply.push_back(reply);
-  }
-
-  // 处理 batch_pir_query2
-  for (uint32_t i = 0; i < batch_pir_query2.size(); i++) {
-      PirReply reply = generate_reply_with_mul_confusion(batch_pir_query2[i], client_id, i);
+  for (uint32_t i = 0; i < batch_pir_query.size(); i++) {
+      PirReply reply = generate_reply_with_add_confusion(batch_pir_query[i], client_id, i);
       batch_pir_reply.push_back(reply);
   }
 
