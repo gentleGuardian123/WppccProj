@@ -10,7 +10,7 @@ using namespace seal;
 
 int main(int argc, char *argv[]) {
     uint8_t dim_of_items_number = 32;
-    uint64_t number_of_items = 1 << dim_of_items_number;
+    uint64_t number_of_items = (1UL << dim_of_items_number);
     uint64_t size_per_item = 1; // in bytes
     uint32_t N = 4096;
     uint32_t logt = 20;
@@ -22,14 +22,17 @@ int main(int argc, char *argv[]) {
     PirParams pir_params;
 
     gen_encryption_params(N, logt, enc_params);
+    verify_encryption_params(enc_params);
     gen_pir_params(number_of_items, size_per_item, d, enc_params, pir_params,
                    use_symmetric, use_batching, use_recursive_mod_switching);
-    verify_encryption_params(enc_params);
+    print_seal_params(enc_params);
+    print_pir_params(pir_params);
 
     PIRClient client(enc_params, pir_params);
     GaloisKeys galois_keys = client.generate_galois_keys();
     PIRServer server(enc_params, pir_params);
     server.set_galois_key(0, galois_keys);
+    cout << "Here!" << endl;
 
     // generate random database.
     random_device rd;
@@ -43,24 +46,33 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    cout << "Here!" << endl;
     // generate random 32-bit desired index vec.
     vector<uint64_t> desired_index_vec;
     {
-        uint64_t index_mod = 1UL << 32;
         for (int i = 0; i < 10; i ++ ) {
-            desired_index_vec.push_back(rd() % index_mod);
+            desired_index_vec.push_back(rd() % number_of_items);
+            // desired_index_vec.push_back(i + 100);
         }
     }
+
+    uint64_t fv_index_t = client.get_fv_index(desired_index_vec[0]);
+    PirQuery pq = client.generate_query(fv_index_t);
+    PirReply pr = server.generate_reply(pq, 0);
+
 /* 
     for (auto it = desired_index_vec.begin(); it != desired_index_vec.end(); it ++ ) {
         cout << "desired_index_vec[]:" << *it << endl;
     }
  */
+
     // generate batch query for these desired index vec.
     vector<Index> elem_index_with_ptr;
     list<FvInfo> fv_info_list;
     vector<PirQuery> batch_pir_query;
     batch_pir_query = client.generate_batch_query(desired_index_vec, elem_index_with_ptr, fv_info_list);
+    cout << batch_pir_query.size() << endl;
+
 /* 
     for (auto it = fv_info_list.begin(); it != fv_info_list.end(); it ++ ) {
         cout << "&fv_info_list[]: " << &(*it) << endl;
@@ -78,9 +90,9 @@ int main(int argc, char *argv[]) {
     }
  */
 
-    // generate reply for batch query.
+    // generate batch reply for batch query.
     vector<PirReply> batch_pir_reply;
-    for ( PirQuery query: batch_pir_query ) {
+    for ( auto query: batch_pir_query ) {
         PirReply reply = server.generate_reply(query, 0);
         batch_pir_reply.push_back(reply);
     }
@@ -89,18 +101,19 @@ int main(int argc, char *argv[]) {
     vector<vector<uint8_t>> elems = client.decode_batch_reply(batch_pir_reply, elem_index_with_ptr);
 
     assert(elems.size() == desired_index_vec.size());
-    for (auto it = elems.begin(); it != elems.end(); it ++ ) {
+    for ( auto it = elems.begin(); it != elems.end(); it ++ ) {
         assert((*it).size() == size_per_item);
     }
     bool failed = false;
 
-    // notice that we assume that the data size is **1 byte**.
     for (uint64_t i = 0UL; i < elems.size(); i ++ ) {
-        if (elems[i][0] != db_copy.get()[desired_index_vec[i]]) {
-            cout << "Main: elems " << (int)elems[i][0] << ", db"
-                << db_copy.get()[desired_index_vec[i]] << endl;
-            cout << "Main: PIR result wrong at " << i << endl;
-            failed = true;
+        for (uint32_t j = 0; i < size_per_item; i++ ) {
+            if (elems[i][j] != db_copy.get()[desired_index_vec[i] * size_per_item + j]) {
+                cout << "Main: elems " << (int)elems[i][j] << ", db"
+                    << db_copy.get()[desired_index_vec[i] * size_per_item + i] << endl;
+                cout << "Main: PIR result wrong at " << i << endl;
+                failed = true;
+            }
         }
     }
 

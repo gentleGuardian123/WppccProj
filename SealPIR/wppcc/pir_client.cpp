@@ -92,19 +92,27 @@ vector<PirQuery> PIRClient::generate_batch_query(vector<uint64_t> &desired_index
         elem_index_with_ptr.push_back(index);
     }
 
-    fv_info_list.sort([](const FvInfo &_f1, const FvInfo &_f2) { return (_f1.index_value) < _f2.index_value; });
+    fv_info_list.sort(
+        [](const FvInfo &_f1, const FvInfo &_f2) { 
+            return (_f1.index_value < _f2.index_value); 
+        }
+    );
 
     uint64_t first_fv_index = get_fv_index(fv_info_list.front().index_value);
     uint64_t reply_id = 0UL;
     batch_fv_index.push_back(first_fv_index);
-    batch_pir_query.push_back(generate_query(first_fv_index));
+    PirQuery first_query = generate_query(first_fv_index);
+    batch_pir_query.push_back(first_query);
 
     for (auto &fv_info: fv_info_list) {
         uint64_t fv_index = get_fv_index(fv_info.index_value);
         fv_info.fv_offset = get_fv_offset(fv_info.index_value);
+        cout << "fv_info_list[].fv_index:" <<  fv_index << endl;
+        cout << "batch_fv_index.back():" << batch_fv_index.back() << endl;
         if (fv_index > batch_fv_index.back()) {
             batch_fv_index.push_back(fv_index);
-            batch_pir_query.push_back(generate_query(fv_index));
+            PirQuery query = generate_query(fv_index);
+            batch_pir_query.push_back(query);
             fv_info.reply_id = ++reply_id;
         } else {
             fv_info.reply_id = reply_id;
