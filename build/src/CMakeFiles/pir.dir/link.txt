@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpir.a CMakeFiles/pir.dir/pir.cpp.o CMakeFiles/pir.dir/pir_client.cpp.o CMakeFiles/pir.dir/pir_server.cpp.o
-/usr/bin/ranlib libpir.a

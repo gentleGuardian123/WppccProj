@@ -1,6 +1,4 @@
-SealPIR/build/
-SealPIR/bin/
-SealPIR/src/
-SealPIR/test/
+build/
+bin/
 .vscode/
 data/
