@@ -184,7 +184,6 @@ Plaintext PIRClient::decrypt(Ciphertext ct) {
 vector<vector<uint8_t>> PIRClient::decode_batch_reply(vector<PirReply> &batch_reply, vector<Index> &elem_index_with_ptr) {
     vector<vector<uint8_t>> elems;
 
-    // cout << "*" << endl;
     for (auto it = elem_index_with_ptr.begin(); it < elem_index_with_ptr.end(); it++) {
         uint64_t reply_id = it->fv_info_ptr->reply_id;
         uint64_t offset = it->fv_info_ptr->fv_offset;
@@ -258,8 +257,8 @@ Plaintext PIRClient::decode_reply(PirReply &reply) {
   uint64_t t = enc_params_.plain_modulus().value();
 
   for (uint32_t i = 0; i < recursion_level; i++) {
-    cout << "Client: " << i + 1 << "/ " << recursion_level
-         << "-th decryption layer started." << endl;
+    // cout << "Client: " << i + 1 << "/ " << recursion_level
+    //      << "-th decryption layer started." << endl;
     vector<Ciphertext> newtemp;
     vector<Plaintext> tempplain;
 
@@ -289,8 +288,8 @@ Plaintext PIRClient::decode_reply(PirReply &reply) {
         // cout << "Client: const term of ciphertext = " << combined[0] << endl;
       }
     }
-    cout << "Client: done." << endl;
-    cout << endl;
+    // cout << "Client: done." << endl;
+    // cout << endl;
     if (i == recursion_level - 1) {
       assert(temp.size() == 1);
       return tempplain[0];
