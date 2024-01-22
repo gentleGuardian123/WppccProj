@@ -14,7 +14,6 @@ PIRServer::PIRServer(const EncryptionParameters &enc_params,
   encoder_ = make_unique<BatchEncoder>(*context_);
 }
 
-//// 预处理数据库，将每个元素转换为NTT域表示
 void PIRServer::preprocess_database() {
   if (!is_db_preprocessed_) {
 
@@ -27,7 +26,6 @@ void PIRServer::preprocess_database() {
   }
 }
 
-// 将拥有数据库所有权的操作交给服务器，并在退出时释放它
 void PIRServer::set_database(unique_ptr<vector<Plaintext>> &&db) {
   if (!db) {
     throw invalid_argument("db cannot be null");
@@ -37,8 +35,7 @@ void PIRServer::set_database(unique_ptr<vector<Plaintext>> &&db) {
   is_db_preprocessed_ = false;
 }
 
-// 使用字节数组设置数据库
-void PIRServer::set_database(const std::unique_ptr<const uint8_t[]> &bytes,
+void PIRServer::set_database(const unique_ptr<const uint8_t[]> &bytes,
                              uint64_t ele_num, uint64_t ele_size) {
 
   uint32_t logt = floor(log2(enc_params_.plain_modulus().value()));
@@ -93,7 +90,7 @@ void PIRServer::set_database(const std::unique_ptr<const uint8_t[]> &bytes,
     for (uint64_t ele = 0; ele < ele_in_chunk; ele++) {
       vector<uint64_t> element_coeffs = bytes_to_coeffs(
           logt, bytes.get() + offset + (ele_size * ele), ele_size);
-      std::copy(element_coeffs.begin(), element_coeffs.end(),
+      copy(element_coeffs.begin(), element_coeffs.end(),
                 coefficients.begin() +
                     (coefficients_per_element(logt, ele_size) * ele));
     }
@@ -212,8 +209,8 @@ PirReply PIRServer::generate_reply(PirQuery &query, uint32_t client_id) {
           expand_query(query[i][j], total, client_id);
       expanded_query.insert(
           expanded_query.end(),
-          std::make_move_iterator(expanded_query_part.begin()),
-          std::make_move_iterator(expanded_query_part.end()));
+          make_move_iterator(expanded_query_part.begin()),
+          make_move_iterator(expanded_query_part.end()));
       expanded_query_part.clear();
     }
     // cout << "Server: expansion done " << endl;
@@ -442,92 +439,67 @@ void PIRServer::set_one_ct(Ciphertext one) {
   evaluator_->transform_to_ntt_inplace(one_);
 }
 
-void PIRServer::gen_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2, uint64_t i) {
-    // 设置随机数生成器，使用随机设备作为种子
-    auto now = std::chrono::system_clock::now();
-    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-    // 使用时间戳作为种子来初始化随机数生成器
-    std::mt19937 gen(static_cast<std::uint64_t>(timestamp) + i);
-    std::uniform_int_distribution<std::uint64_t> dis(1, std::numeric_limits<std::uint64_t>::max());
+/* 
+    Above are the codes of SealPIR; below are the new codes for the current project.
+ */
 
-    // 生成两个随机数，并分别赋值给 dest_rand1 和 dest_rand2
-    dest_rand1 = dis(gen);
-    dest_rand2 = dis(gen);
+void PIRServer::gen_rand_trio(uint64_t &dest_rand1, uint64_t &dest_rand2, uint64_t &dest_rand3) {
+    auto now = chrono::system_clock::now();
+    auto timestamp = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count();
+    mt19937 gen(static_cast<uint64_t>(timestamp));
+    uniform_int_distribution<uint64_t> dis(1, numeric_limits<uint64_t>::max());
+
+    // generate two randoms under plain modulus.
+    uint64_t mod = enc_params_.plain_modulus().value();
+    dest_rand1 = dis(gen) % mod;
+    dest_rand2 = dis(gen) % mod;
+    dest_rand3 = (mod - dest_rand1 - dest_rand2) % mod;
+    // cout << "r1+r2+r3: " << dest_rand1 + dest_rand2 + dest_rand3 << endl;
+    // cout << "plain_modulus: " << mod << endl;
+    // cout << "r1+r2+r3 (mod plain_modulus): " << (dest_rand1+dest_rand2+dest_rand3) % mod << endl;
 }
 
-void PIRServer::refresh_and_set_rand_vec(std::vector<PirQuery> &query)
-{
-    uint64_t m = query.size();
-    std::uint64_t dest_rand1;
-    std::uint64_t dest_rand2;
-    // 初始化并为 rand_vec1 赋予 m 个随机数
-    rand_vec1_.clear();
-    rand_vec1_.reserve(m);
-    rand_vec2_.clear();
-    rand_vec2_.reserve(m);
-    for (uint64_t i = 0UL; i < m; i++) {
-        gen_rand(dest_rand1, dest_rand2, i);
-        rand_vec1_.push_back(dest_rand1 % enc_params_.plain_modulus().value());
-        rand_vec2_.push_back(dest_rand2 % enc_params_.plain_modulus().value());
-        rand_vec3_.push_back((-rand_vec1_[i] - rand_vec2_[i] + 2 * enc_params_.plain_modulus().value()) % enc_params_.plain_modulus().value());
-        rand_vec4_.push_back(invert_mod((dest_rand1%enc_params_.plain_modulus().value())*(dest_rand1%enc_params_.plain_modulus().value()), enc_params_.plain_modulus()));
-        cout <<"enc_params_.plain_modulus()";
-        cout << enc_params_.plain_modulus().value() <<endl;
+void PIRServer::output_rand_vec_to_send(vector<uint64_t> &rand_vec_to_send1, vector<uint64_t> &rand_vec_to_send2) {
+    rand_vec_to_send1 = rand_vec_to_send1_;
+    rand_vec_to_send2 = rand_vec_to_send2_;
+}
+
+void PIRServer::refresh_and_set_rand_vec(size_t batch_query_size) {
+    uint64_t r1, r2, r3;
+    uint64_t mod = enc_params_.plain_modulus().value();
+    rand_vec_to_send1_.clear();
+    rand_vec_to_send2_.clear();
+
+    for (size_t i = 0; i < batch_query_size; i ++) {
+        gen_rand_trio(r1, r2, r3);
+        rand_vec_to_send1_.push_back(r1);
+        rand_vec_to_send2_.push_back(r2);
+        rand_vec_to_use_.push_back(r3);
     }
 
 }
 
-std::vector<std::uint64_t> &PIRServer::get_rand_vec_1() {
-    return rand_vec1_;
-}
+PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t client_id, uint64_t random_number) {
 
-std::vector<std::uint64_t> &PIRServer::get_rand_vec_2() {
-    return rand_vec2_;
-}
-
-std::vector<std::uint64_t> &PIRServer::get_rand_vec_3() {
-    return rand_vec3_;
-}
-
-std::vector<std::uint64_t> &PIRServer::get_rand_vec_4() {
-    return rand_vec4_;
-}
-
-PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t rand_index){
   PirReply reply = generate_reply(query, client_id);
-
-  for (uint32_t jj = 0; jj < reply.size(); jj++) {
-    //查询手机号总数，随机数add_rand_vec与查询结果相加
-    Plaintext pt(rand_vec3_[rand_index]);
-    evaluator_->add_plain_inplace(reply[jj], pt);
-  }
-
-  return reply;
-}
-
-PirReply PIRServer::generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t rand_index){
-  PirReply reply = generate_reply(query, client_id);
-
-  for (uint32_t jj = 0; jj < reply.size(); jj++) {
-    //查询是否在黑名单里，随机数add_rand_vec4与查询结果相乘
-    Plaintext pt(rand_vec4_[rand_index]);
-    evaluator_->multiply_plain_inplace(reply[jj], pt);
-    evaluator_->mod_switch_to_next_inplace(reply[jj]);
-    evaluator_->multiply_plain_inplace(reply[jj], pt);
-    evaluator_->transform_from_ntt_inplace(reply[jj]);
+  for (size_t i = 0; i < reply.size(); i ++) {
+    Plaintext pt(random_number);
+    evaluator_->add_plain_inplace(reply[i], pt);
   }
 
   return reply;
 }
 
 vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, uint32_t client_id){
-  vector<PirReply> batch_pir_reply;
+    vector<PirReply> batch_pir_reply;
+    size_t batch_query_size = batch_pir_query.size();
+    refresh_and_set_rand_vec(batch_query_size);
 
-  for (uint32_t i = 0; i < batch_pir_query.size(); i++) {
-      PirReply reply = generate_reply_with_add_confusion(batch_pir_query[i], client_id, i);
-      batch_pir_reply.push_back(reply);
-  }
+    for (size_t i = 0; i < batch_query_size; i++) {
+        uint64_t random_number = rand_vec_to_use_[i];
+        PirReply reply = generate_reply_with_add_confusion(batch_pir_query[i], client_id, i);
+        batch_pir_reply.push_back(reply);
+    }
 
-  return batch_pir_reply;
-
+    return batch_pir_reply;
 }

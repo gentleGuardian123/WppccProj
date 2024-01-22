@@ -38,15 +38,11 @@ public:
   seal::Ciphertext simple_query(std::uint64_t index);
   void set_one_ct(seal::Ciphertext one);
 
-  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
-  PirReply generate_reply_with_mul_confusion(PirQuery &query, std::uint32_t client_id,std::uint32_t Batch_i);
+  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id, std::uint64_t random_number);
   std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &batch_pir_query, std::uint32_t client_id);
-  void refresh_and_set_rand_vec(std::vector<PirQuery> &query) ;
-  void gen_rand(std::uint64_t& dest_rand1, std::uint64_t& dest_rand2, uint64_t i);
-  std::vector<std::uint64_t>& get_rand_vec_1();
-  std::vector<std::uint64_t>& get_rand_vec_2();
-  std::vector<std::uint64_t>& get_rand_vec_3();
-  std::vector<std::uint64_t>& get_rand_vec_4();
+  void refresh_and_set_rand_vec(size_t batch_query_size) ;
+  void gen_rand_trio(std::uint64_t &dest_rand1, std::uint64_t &dest_rand2, std::uint64_t &dest_rand3);
+  void output_rand_vec_to_send(std::vector<std::uint64_t> &rand_vec_to_send1, std::vector<std::uint64_t> &rand_vec_to_send2);
   
 private:
   seal::EncryptionParameters enc_params_; // SEAL parameters
@@ -57,10 +53,10 @@ private:
   std::unique_ptr<seal::Evaluator> evaluator_;
   std::unique_ptr<seal::BatchEncoder> encoder_;
   std::shared_ptr<seal::SEALContext> context_;
-  std::vector<std::uint64_t> rand_vec1_;  // 成员变量，用于存储生成的随机数1 r1
-  std::vector<std::uint64_t> rand_vec2_;  // 成员变量，用于存储生成的随机数2 r2
-  std::vector<std::uint64_t> rand_vec3_;  // 成员变量，用于存储生成的随机数-1-2 r3
-  std::vector<std::uint64_t> rand_vec4_;  // 成员变量，用于存储生成的随机数(12)^-1 r4
+
+  std::vector<std::uint64_t> rand_vec_to_send1_;
+  std::vector<std::uint64_t> rand_vec_to_send2_;
+  std::vector<std::uint64_t> rand_vec_to_use_;
 
   // This is only used for simple_query
   seal::Ciphertext one_;

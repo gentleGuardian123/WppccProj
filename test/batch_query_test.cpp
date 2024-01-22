@@ -1,7 +1,6 @@
 #include "pir.hpp"
 #include "pir_server.hpp"
 #include "pir_client.hpp"
-#include "imp_data.hpp"
 
 #include <seal/seal.h>
 
@@ -44,25 +43,20 @@ int main(int argc, char *argv[]) {
             db_copy.get()[(i * size_per_item) + j] = val;
         }
     }
-    cout << "Generated random database successfully." << endl;
+    cout << "Main: Generated random database successfully." << endl;
     server.set_database(move(db), number_of_items, size_per_item);
     server.preprocess_database();
 
     // generate random 32-bit desired index vec.
     vector<uint64_t> desired_index_vec;
     for (int i = 0; i < 10; i ++ ) {
+        // discrete indices.
         desired_index_vec.push_back(rd() % number_of_items);
-        // desired_index_vec.push_back(i + 100);
     }
     for (int i = 0; i < 10; i ++ ) {
-        // desired_index_vec.push_back(rd() % number_of_items);
+        // constant indices.
         desired_index_vec.push_back(i + 10000);
     }
-
-
-    uint64_t fv_index_t = client.get_fv_index(desired_index_vec[0]);
-    PirQuery pq = client.generate_query(fv_index_t);
-    PirReply pr = server.generate_reply(pq, 0);
 
 /* 
     for (auto it = desired_index_vec.begin(); it != desired_index_vec.end(); it ++ ) {
@@ -75,7 +69,7 @@ int main(int argc, char *argv[]) {
     list<FvInfo> fv_info_list;
     vector<PirQuery> batch_pir_query;
     batch_pir_query = client.generate_batch_query(desired_index_vec, elem_index_with_ptr, fv_info_list);
-    cout << "batch_pir_query.size(): " << batch_pir_query.size() << endl;
+    cout << "Main: Size of batch pir query is " << batch_pir_query.size() << endl;
 
 /* 
     for (auto it = fv_info_list.begin(); it != fv_info_list.end(); it ++ ) {
@@ -100,7 +94,7 @@ int main(int argc, char *argv[]) {
     for ( auto query: batch_pir_query ) {
         PirReply reply = server.generate_reply(query, 0);
         batch_pir_reply.push_back(reply);
-        cout << "Get " << ++ count << "-th reply..." << endl;
+        cout << "Server: generated " << ++ count << "-th reply..." << endl;
     }
 
     // decode batch relpy.

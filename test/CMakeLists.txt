@@ -11,3 +11,7 @@ add_test(NAME imp_data_test COMMAND imp_data_test)
 add_executable(invert_mod_test invert_mod_test.cpp)
 target_link_libraries(invert_mod_test pir)
 add_test(NAME invert_mod_test COMMAND invert_mod_test)
+
+add_executable(multi_party_comput_test multi_party_comput_test.cpp)
+target_link_libraries(multi_party_comput_test pir)
+add_test(NAME multi_party_comput_test COMMAND multi_party_comput_test)
