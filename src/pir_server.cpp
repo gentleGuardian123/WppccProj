@@ -172,6 +172,11 @@ int PIRServer::serialize_reply(PirReply &reply, stringstream &stream) {
 }
 
 PirReply PIRServer::generate_reply(PirQuery &query, uint32_t client_id) {
+  return generate_reply_with_db(query, client_id, move(db_));
+}
+
+PirReply PIRServer::generate_reply_with_db(PirQuery &query, uint32_t client_id, 
+                                            unique_ptr<vector<Plaintext>> &&db) {
 
   vector<uint64_t> nvec = pir_params_.nvec;
   uint64_t product = 1;
@@ -182,7 +187,7 @@ PirReply PIRServer::generate_reply(PirQuery &query, uint32_t client_id) {
 
   auto coeff_count = enc_params_.poly_modulus_degree();
 
-  vector<Plaintext> *cur = db_.get();
+  vector<Plaintext> *cur = db.get();
   vector<Plaintext> intermediate_plain; // decompose....
 
   auto pool = MemoryManager::GetPool();
@@ -479,15 +484,11 @@ void PIRServer::refresh_and_set_rand_vec(size_t batch_query_size) {
 }
 
 PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t client_id, uint64_t random_number) {
-    PirReply reply = generate_reply(query, client_id);
-    cout << "Here" << endl;
-    for (size_t i = 1; i < reply.size(); i ++) {
-        Plaintext pt(random_number);
-        cout << "Here" << endl;
-        evaluator_->add_plain_inplace(reply[i], pt);
-    }
+    auto cur = make_unique<vector<Plaintext>>();
 
-    return reply;
+    /* TODO: copy db_ into cur, and add random number to each ptxt of cur. */
+
+    return generate_reply_with_db(query, client_id, move(cur));
 }
 
 vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, uint32_t client_id){

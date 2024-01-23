@@ -6,7 +6,7 @@
 #include <seal/seal.h>
 #include <iomanip>
 
-// #define DEBUG
+#define DEBUG
 
 using namespace std;
 using namespace seal;
@@ -95,12 +95,12 @@ int main(int argc, char *argv[]) {
     cout << "Server A: r1, r2, r3 are " << r1 << ", " << r2 << ", " << r3 << " respectively, satisfying r1+r2+r3 = 0 (mod plain_modulus)." << endl;
     cout << endl;
 
-    // PirReply reply_A = server_A.generate_reply(query_A, 0);
-    // PirReply reply_B = server_B.generate_reply(query_B, 0);
-    // PirReply reply_C = server_C.generate_reply(query_C, 0);
-    PirReply reply_A = server_A.generate_reply_with_add_confusion(query_A, 0, r1);
-    PirReply reply_B = server_B.generate_reply_with_add_confusion(query_B, 0, r2);
-    PirReply reply_C = server_C.generate_reply_with_add_confusion(query_C, 0, r3);
+    PirReply reply_A = server_A.generate_reply(query_A, 0);
+    PirReply reply_B = server_B.generate_reply(query_B, 0);
+    PirReply reply_C = server_C.generate_reply(query_C, 0);
+    // PirReply reply_A = server_A.generate_reply_with_add_confusion(query_A, 0, r1);
+    // PirReply reply_B = server_B.generate_reply_with_add_confusion(query_B, 0, r2);
+    // PirReply reply_C = server_C.generate_reply_with_add_confusion(query_C, 0, r3);
     cout << "Servers: Generated replies utilizing additive confusion." << endl;
 
     vector<uint8_t> elems_A = client.decode_reply(reply_A, fv_offset_A);

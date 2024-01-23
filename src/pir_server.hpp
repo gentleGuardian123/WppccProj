@@ -24,6 +24,8 @@ public:
 
   PirQuery deserialize_query(std::stringstream &stream);
   PirReply generate_reply(PirQuery &query, std::uint32_t client_id);
+  PirReply generate_reply_with_db(PirQuery &query, std::uint32_t client_id, 
+                                  std::unique_ptr<std::vector<seal::Plaintext>> &&db);
 
   // Serializes the reply into the provided stream and returns the number of
   // bytes written
