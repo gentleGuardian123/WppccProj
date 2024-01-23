@@ -4,6 +4,8 @@
 
 #include <seal/seal.h>
 
+// #define DEBUG
+
 using namespace std;
 using namespace seal;
 
@@ -58,11 +60,11 @@ int main(int argc, char *argv[]) {
         desired_index_vec.push_back(i + 10000);
     }
 
-/* 
+#ifdef DEBUG
     for (auto it = desired_index_vec.begin(); it != desired_index_vec.end(); it ++ ) {
         cout << "desired_index_vec[]:" << *it << endl;
     }
- */
+#endif
 
     // generate batch query for these desired index vec.
     vector<Index> elem_index_with_ptr;
@@ -71,7 +73,7 @@ int main(int argc, char *argv[]) {
     batch_pir_query = client.generate_batch_query(desired_index_vec, elem_index_with_ptr, fv_info_list);
     cout << "Main: Size of batch pir query is " << batch_pir_query.size() << endl;
 
-/* 
+#ifdef DEBUG
     for (auto it = fv_info_list.begin(); it != fv_info_list.end(); it ++ ) {
         cout << "&fv_info_list[]: " << &(*it) << endl;
         cout << "fv_info_list[].index_value: " << it->index_value << endl;
@@ -86,7 +88,7 @@ int main(int argc, char *argv[]) {
         cout << "elem_index_with_ptr[]->fv_info_ptr->fv_offset: " << it->fv_info_ptr->fv_offset << endl;
         cout << "elem_index_with_ptr[]->fv_info_ptr->reply_id: " << it->fv_info_ptr->reply_id << endl;
     }
- */
+#endif
 
     // generate batch reply for batch query.
     vector<PirReply> batch_pir_reply;

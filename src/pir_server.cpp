@@ -65,9 +65,9 @@ void PIRServer::set_database(const unique_ptr<const uint8_t[]> &bytes,
       ele_per_ptxt * coefficients_per_element(logt, ele_size);
   assert(coeff_per_ptxt <= N);
 
-  cout << "Elements per plaintext: " << ele_per_ptxt << endl;
-  cout << "Coeff per ptxt: " << coeff_per_ptxt << endl;
-  cout << "Bytes per plaintext: " << bytes_per_ptxt << endl;
+  // cout << "Elements per plaintext: " << ele_per_ptxt << endl;
+  // cout << "Coeff per ptxt: " << coeff_per_ptxt << endl;
+  // cout << "Bytes per plaintext: " << bytes_per_ptxt << endl;
 
   uint32_t offset = 0;
 
@@ -476,18 +476,18 @@ void PIRServer::refresh_and_set_rand_vec(size_t batch_query_size) {
         rand_vec_to_send2_.push_back(r2);
         rand_vec_to_use_.push_back(r3);
     }
-
 }
 
 PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t client_id, uint64_t random_number) {
+    PirReply reply = generate_reply(query, client_id);
+    cout << "Here" << endl;
+    for (size_t i = 1; i < reply.size(); i ++) {
+        Plaintext pt(random_number);
+        cout << "Here" << endl;
+        evaluator_->add_plain_inplace(reply[i], pt);
+    }
 
-  PirReply reply = generate_reply(query, client_id);
-  for (size_t i = 0; i < reply.size(); i ++) {
-    Plaintext pt(random_number);
-    evaluator_->add_plain_inplace(reply[i], pt);
-  }
-
-  return reply;
+    return reply;
 }
 
 vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, uint32_t client_id){
