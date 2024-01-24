@@ -218,7 +218,7 @@ Plaintext PIRClient::decode_reply(PirReply &reply) {
         compose_to_ciphertext(parms, tempplain, combined);
         newtemp.push_back(combined);
         tempplain.clear();
-        // cout << "Client: const term of ciphertext = " << combined[0] << endl;
+        cout << "Client: const term of ciphertext = " << combined[0] << endl;
       }
     }
     // cout << "Client: done." << endl;

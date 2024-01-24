@@ -475,7 +475,7 @@ Plaintext PIRServer::gen_rand_pt(uint64_t rand_num) {
     // Get the coefficients of the elements that will be packed in random plaintext.
     vector<uint64_t> coefficients(coeff_per_ptxt, rand_num);
     Plaintext rand_pt;
-    encoder_->encode(coefficients, rand_pt);
+    vector_to_plaintext(coefficients, rand_pt);
 
     return rand_pt;
 }
@@ -520,6 +520,8 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
 
   vector<Plaintext> *cur = db_.get();
   vector<Plaintext> intermediate_plain; // decompose....
+  Plaintext rand_pt = gen_rand_pt(rand_num);
+  evaluator_->transform_to_ntt_inplace(rand_pt, context_->first_parms_id());
 
   auto pool = MemoryManager::GetPool();
 
@@ -576,22 +578,21 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
     product /= n_i;
 
     vector<Ciphertext> intermediateCtxts(product);
-    Ciphertext temp;
-    Plaintext rand_pt = gen_rand_pt(rand_num);
-    evaluator_->transform_to_ntt_inplace(rand_pt, context_->first_parms_id());
+    Ciphertext temp, _temp;
 
     for (uint64_t k = 0; k < product; k++) {
-
+      evaluator_->multiply_plain(expanded_query[0], rand_pt, _temp);
       evaluator_->multiply_plain(expanded_query[0], (*cur)[k],
                                  intermediateCtxts[k]);
-      evaluator_->add_plain_inplace(intermediateCtxts[k], rand_pt);
+      evaluator_->add_inplace(intermediateCtxts[k], _temp);
 
       for (uint64_t j = 1; j < n_i; j++) {
         evaluator_->multiply_plain(expanded_query[j], (*cur)[k + j * product],
                                    temp);
+        evaluator_->multiply_plain(expanded_query[j], rand_pt, _temp);
         evaluator_->add_inplace(intermediateCtxts[k],
                                 temp); // Adds to first component.
-        evaluator_->add_plain_inplace(intermediateCtxts[k], rand_pt);
+        evaluator_->add_inplace(intermediateCtxts[k], _temp);
       }
     }
 

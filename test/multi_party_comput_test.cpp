@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     uint64_t size_per_item = 1024; // in bytes
     uint32_t N = 4096;
     uint32_t logt = 20;
-    uint32_t d = 2;
+    uint32_t d = 1;
     bool use_symmetric = true; 
     bool use_batching = true;  
     bool use_recursive_mod_switching = true;
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     auto db_C_copy(make_unique<uint8_t[]>(number_of_items * size_per_item));
     for (uint64_t i = 0; i < number_of_items; i++) {
         for (uint64_t j = 0; j < size_per_item; j++) {
-            uint8_t val = rd() % 256;
+            uint8_t val = rd() % 80;
             db_A.get()[(i * size_per_item) + j] = val;
             db_B.get()[(i * size_per_item) + j] = val;
             db_C.get()[(i * size_per_item) + j] = val;
@@ -108,20 +108,24 @@ int main(int argc, char *argv[]) {
     vector<uint8_t> elems_C = client.decode_reply(reply_C, fv_offset_C);
 
 #ifdef DEBUG
-    cout << "elems_A:" << endl;
+    cout << "elems_A + elems_B + elems_C:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
-             << (int)elems_A[i * (size_per_item/64) + j]
+             << (int)elems_A[i * (size_per_item/64) + j] + 
+                (int)elems_B[i * (size_per_item/64) + j] + 
+                (int)elems_B[i * (size_per_item/64) + j]
              << " ";
         }
         cout << endl;
     }
-    cout << "db_A:" << endl;
+    cout << "db_A + db_B + db_C:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
-             << (int)db_A_copy.get()[(elem_index_A * size_per_item) + i * (size_per_item/64) + j]
+             << (int)db_A_copy.get()[(elem_index_A * size_per_item) + i * (size_per_item/64) + j] + 
+                (int)db_B_copy.get()[(elem_index_B * size_per_item) + i * (size_per_item/64) + j] + 
+                (int)db_C_copy.get()[(elem_index_C * size_per_item) + i * (size_per_item/64) + j]
              << " ";
         }
         cout << endl;
