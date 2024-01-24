@@ -24,8 +24,6 @@ public:
 
   PirQuery deserialize_query(std::stringstream &stream);
   PirReply generate_reply(PirQuery &query, std::uint32_t client_id);
-  PirReply generate_reply_with_db(PirQuery &query, std::uint32_t client_id, 
-                                  std::unique_ptr<std::vector<seal::Plaintext>> &&db);
 
   // Serializes the reply into the provided stream and returns the number of
   // bytes written
@@ -40,11 +38,12 @@ public:
   seal::Ciphertext simple_query(std::uint64_t index);
   void set_one_ct(seal::Ciphertext one);
 
-  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id, std::uint64_t random_number);
+  PirReply generate_reply_with_add_confusion(PirQuery &query, std::uint32_t client_id, std::uint64_t rand_num);
   std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &batch_pir_query, std::uint32_t client_id);
   void refresh_and_set_rand_vec(size_t batch_query_size) ;
   void gen_rand_trio(std::uint64_t &dest_rand1, std::uint64_t &dest_rand2, std::uint64_t &dest_rand3);
   void output_rand_vec_to_send(std::vector<std::uint64_t> &rand_vec_to_send1, std::vector<std::uint64_t> &rand_vec_to_send2);
+  seal::Plaintext gen_rand_pt(std::uint64_t rand_num);
   
 private:
   seal::EncryptionParameters enc_params_; // SEAL parameters

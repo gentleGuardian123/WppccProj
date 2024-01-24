@@ -172,12 +172,6 @@ int PIRServer::serialize_reply(PirReply &reply, stringstream &stream) {
 }
 
 PirReply PIRServer::generate_reply(PirQuery &query, uint32_t client_id) {
-  return generate_reply_with_db(query, client_id, move(db_));
-}
-
-PirReply PIRServer::generate_reply_with_db(PirQuery &query, uint32_t client_id, 
-                                            unique_ptr<vector<Plaintext>> &&db) {
-
   vector<uint64_t> nvec = pir_params_.nvec;
   uint64_t product = 1;
 
@@ -187,7 +181,7 @@ PirReply PIRServer::generate_reply_with_db(PirQuery &query, uint32_t client_id,
 
   auto coeff_count = enc_params_.poly_modulus_degree();
 
-  vector<Plaintext> *cur = db.get();
+  vector<Plaintext> *cur = db_.get();
   vector<Plaintext> intermediate_plain; // decompose....
 
   auto pool = MemoryManager::GetPool();
@@ -469,6 +463,23 @@ void PIRServer::output_rand_vec_to_send(vector<uint64_t> &rand_vec_to_send1, vec
     rand_vec_to_send2 = rand_vec_to_send2_;
 }
 
+Plaintext PIRServer::gen_rand_pt(uint64_t rand_num) {
+    uint32_t logt = floor(log2(enc_params_.plain_modulus().value()));
+    uint32_t N = enc_params_.poly_modulus_degree();
+    uint64_t ele_per_ptxt = pir_params_.elements_per_plaintext;
+    uint64_t ele_size = pir_params_.ele_size;
+    uint64_t coeff_per_ptxt =
+        ele_per_ptxt * coefficients_per_element(logt, ele_size);
+    assert(coeff_per_ptxt <= N);
+
+    // Get the coefficients of the elements that will be packed in random plaintext.
+    vector<uint64_t> coefficients(coeff_per_ptxt, rand_num);
+    Plaintext rand_pt;
+    encoder_->encode(coefficients, rand_pt);
+
+    return rand_pt;
+}
+
 void PIRServer::refresh_and_set_rand_vec(size_t batch_query_size) {
     uint64_t r1, r2, r3;
     uint64_t mod = enc_params_.plain_modulus().value();
@@ -483,14 +494,6 @@ void PIRServer::refresh_and_set_rand_vec(size_t batch_query_size) {
     }
 }
 
-PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t client_id, uint64_t random_number) {
-    auto cur = make_unique<vector<Plaintext>>();
-
-    /* TODO: copy db_ into cur, and add random number to each ptxt of cur. */
-
-    return generate_reply_with_db(query, client_id, move(cur));
-}
-
 vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, uint32_t client_id){
     vector<PirReply> batch_pir_reply;
     size_t batch_query_size = batch_pir_query.size();
@@ -503,4 +506,134 @@ vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, u
     }
 
     return batch_pir_reply;
+}
+
+PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t client_id, uint64_t rand_num) {
+  vector<uint64_t> nvec = pir_params_.nvec;
+  uint64_t product = 1;
+
+  for (uint32_t i = 0; i < nvec.size(); i++) {
+    product *= nvec[i];
+  }
+
+  auto coeff_count = enc_params_.poly_modulus_degree();
+
+  vector<Plaintext> *cur = db_.get();
+  vector<Plaintext> intermediate_plain; // decompose....
+
+  auto pool = MemoryManager::GetPool();
+
+  int N = enc_params_.poly_modulus_degree();
+
+  int logt = floor(log2(enc_params_.plain_modulus().value()));
+
+  for (uint32_t i = 0; i < nvec.size(); i++) {
+    // cout << "Server: " << i + 1 << "-th recursion level started " << endl;
+
+    vector<Ciphertext> expanded_query;
+
+    uint64_t n_i = nvec[i];
+    // cout << "Server: n_i = " << n_i << endl;
+    // cout << "Server: expanding " << query[i].size() << " query ctxts" << endl;
+    for (uint32_t j = 0; j < query[i].size(); j++) {
+      uint64_t total = N;
+      if (j == query[i].size() - 1) {
+        total = n_i % N;
+      }
+      // cout << "-- expanding one query ctxt into " << total << " ctxts " << endl;
+      vector<Ciphertext> expanded_query_part =
+          expand_query(query[i][j], total, client_id);
+      expanded_query.insert(
+          expanded_query.end(),
+          make_move_iterator(expanded_query_part.begin()),
+          make_move_iterator(expanded_query_part.end()));
+      expanded_query_part.clear();
+    }
+    // cout << "Server: expansion done " << endl;
+    if (expanded_query.size() != n_i) {
+      // cout << " size mismatch!!! " << expanded_query.size() << ", " << n_i << endl;
+    }
+
+    // Transform expanded query to NTT, and ...
+    for (uint32_t jj = 0; jj < expanded_query.size(); jj++) {
+      evaluator_->transform_to_ntt_inplace(expanded_query[jj]);
+    }
+
+    // Transform plaintext to NTT. If database is pre-processed, can skip
+    if ((!is_db_preprocessed_) || i > 0) {
+      for (uint32_t jj = 0; jj < cur->size(); jj++) {
+        evaluator_->transform_to_ntt_inplace((*cur)[jj],
+                                             context_->first_parms_id());
+      }
+    }
+
+    for (uint64_t k = 0; k < product; k++) {
+      if ((*cur)[k].is_zero()) {
+        // cout << k + 1 << "/ " << product << "-th ptxt = 0 " << endl;
+      }
+    }
+
+    product /= n_i;
+
+    vector<Ciphertext> intermediateCtxts(product);
+    Ciphertext temp;
+    Plaintext rand_pt = gen_rand_pt(rand_num);
+    evaluator_->transform_to_ntt_inplace(rand_pt, context_->first_parms_id());
+
+    for (uint64_t k = 0; k < product; k++) {
+
+      evaluator_->multiply_plain(expanded_query[0], (*cur)[k],
+                                 intermediateCtxts[k]);
+      evaluator_->add_plain_inplace(intermediateCtxts[k], rand_pt);
+
+      for (uint64_t j = 1; j < n_i; j++) {
+        evaluator_->multiply_plain(expanded_query[j], (*cur)[k + j * product],
+                                   temp);
+        evaluator_->add_inplace(intermediateCtxts[k],
+                                temp); // Adds to first component.
+        evaluator_->add_plain_inplace(intermediateCtxts[k], rand_pt);
+      }
+    }
+
+    for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
+      evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
+      // print intermediate ctxts?
+      // // cout << "const term of ctxt " << jj << " = " <<
+      // intermediateCtxts[jj][0] << endl;
+    }
+
+    if (i == nvec.size() - 1) {
+      return intermediateCtxts;
+    } else {
+      intermediate_plain.clear();
+      intermediate_plain.reserve(pir_params_.expansion_ratio * product);
+      cur = &intermediate_plain;
+
+      for (uint64_t rr = 0; rr < product; rr++) {
+        EncryptionParameters parms;
+        if (pir_params_.enable_mswitching) {
+          evaluator_->mod_switch_to_inplace(intermediateCtxts[rr],
+                                            context_->last_parms_id());
+          parms = context_->last_context_data()->parms();
+        } else {
+          parms = context_->first_context_data()->parms();
+        }
+
+        vector<Plaintext> plains =
+            decompose_to_plaintexts(parms, intermediateCtxts[rr]);
+
+        for (uint32_t jj = 0; jj < plains.size(); jj++) {
+          intermediate_plain.emplace_back(plains[jj]);
+        }
+      }
+      product = intermediate_plain.size(); // multiply by expansion rate.
+    }
+    // cout << "Server: " << i + 1 << "-th recursion level finished " << endl;
+    // cout << endl;
+  }
+  // cout << "reply generated!  " << endl;
+  // This should never get here
+  assert(0);
+  vector<Ciphertext> fail(1);
+  return fail;
 }
