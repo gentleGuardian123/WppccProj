@@ -351,7 +351,7 @@ vector<vector<uint8_t>> PIRClient::decode_batch_reply(vector<PirReply> &batch_re
     return elems;
 }
 
-vector<uint8_t> PIRClient::deconfuse_and_decode_reply(vector<PirReply> &replies, uint64_t offset) {
+vector<uint8_t> PIRClient::deconfuse_and_decode_replies(vector<PirReply> &replies, uint64_t offset) {
     uint64_t mod = enc_params_.plain_modulus().value();
     uint32_t logt = floor(log2(enc_params_.plain_modulus().value()));
     uint32_t N = enc_params_.poly_modulus_degree();

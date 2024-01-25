@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     // vector<uint8_t> elems_B = client.decode_reply(reply_B, fv_offset);
     // vector<uint8_t> elems_C = client.decode_reply(reply_C, fv_offset);
     vector<PirReply> replies({reply_A, reply_B, reply_C});
-    vector<uint8_t> elems_deconfused = client.deconfuse_and_decode_reply(replies, fv_offset);
+    vector<uint8_t> elems_deconfused = client.deconfuse_and_decode_replies(replies, fv_offset);
 
 #ifdef DEBUG
     cout << "elems_deconfused:" << endl;

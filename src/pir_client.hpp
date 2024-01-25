@@ -32,7 +32,7 @@ public:
 
   std::vector<uint8_t> decode_reply(PirReply &reply, uint64_t offset);
 
-  std::vector<uint8_t> deconfuse_and_decode_reply(std::vector<PirReply> &replies, uint64_t offset);
+  std::vector<uint8_t> deconfuse_and_decode_replies(std::vector<PirReply> &replies, uint64_t offset);
 
   seal::Plaintext decrypt(seal::Ciphertext ct);
 
