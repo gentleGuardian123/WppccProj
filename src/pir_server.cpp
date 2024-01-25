@@ -468,12 +468,18 @@ Plaintext PIRServer::gen_rand_pt(uint64_t rand_num) {
     uint32_t N = enc_params_.poly_modulus_degree();
     uint64_t ele_per_ptxt = pir_params_.elements_per_plaintext;
     uint64_t ele_size = pir_params_.ele_size;
-    uint64_t coeff_per_ptxt =
-        ele_per_ptxt * coefficients_per_element(logt, ele_size);
+    uint64_t coeff_per_ele = coefficients_per_element(logt, ele_size);
+    uint64_t coeff_per_ptxt = ele_per_ptxt * coeff_per_ele;
     assert(coeff_per_ptxt <= N);
 
-    // Get the coefficients of the elements that will be packed in random plaintext.
-    vector<uint64_t> coefficients(coeff_per_ptxt, rand_num);
+    // The coefficients of the elements that will be packed in random plaintext.
+    vector<uint64_t> coefficients(coeff_per_ptxt);
+    vector<uint64_t> padding(coeff_per_ele-1, 0);
+    for (uint64_t i = 0UL; i < ele_per_ptxt; i ++) {
+        copy(padding.begin(), padding.end(), 
+                coefficients.begin() + coeff_per_ele * i);
+        coefficients[(i + 1) * coeff_per_ele - 1] = rand_num;
+    }
     Plaintext rand_pt;
     vector_to_plaintext(coefficients, rand_pt);
 

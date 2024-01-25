@@ -69,24 +69,14 @@ int main(int argc, char *argv[]) {
     server_B.preprocess_database();
     server_C.preprocess_database();
 
-    uint64_t elem_index_A = rd() % number_of_items;
-    uint64_t elem_index_B = rd() % number_of_items;
-    uint64_t elem_index_C = rd() % number_of_items;
-    uint64_t fv_index_A = client.get_fv_index(elem_index_A);
-    uint64_t fv_index_B = client.get_fv_index(elem_index_B);
-    uint64_t fv_index_C = client.get_fv_index(elem_index_C);
-    uint64_t fv_offset_A = client.get_fv_offset(elem_index_A);
-    uint64_t fv_offset_B = client.get_fv_offset(elem_index_B);
-    uint64_t fv_offset_C = client.get_fv_offset(elem_index_C);
-    cout << "Main: Generated single query element index for Server A,B,C respectively." << endl;
-    cout << "Main: Desired element index for Server A: " << elem_index_A << "; fv index: " << fv_index_A << "; fv offset: " << fv_offset_A << "." << endl; 
-    cout << "Main: Desired element index for Server B: " << elem_index_B << "; fv index: " << fv_index_B << "; fv offset: " << fv_offset_B << "." << endl; 
-    cout << "Main: Desired element index for Server C: " << elem_index_C << "; fv index: " << fv_index_C << "; fv offset: " << fv_offset_C << "." << endl; 
+    uint64_t elem_index = rd() % number_of_items;
+    uint64_t fv_index = client.get_fv_index(elem_index);
+    uint64_t fv_offset = client.get_fv_offset(elem_index);
+    cout << "Main: Generated single query element index for Server A,B,C." << endl;
+    cout << "Main: Desired element index for Server A,B,C: " << elem_index << "; fv index: " << fv_index << "; fv offset: " << fv_offset << "." << endl; 
     cout << endl;
 
-    PirQuery query_A = client.generate_query(fv_index_A);
-    PirQuery query_B = client.generate_query(fv_index_B);
-    PirQuery query_C = client.generate_query(fv_index_C);
+    PirQuery query = client.generate_query(fv_index);
 
     cout << "Main: Assume Server A is the host server generating random numbers for confusion." << endl;
     uint64_t r1, r2, r3;
@@ -95,37 +85,38 @@ int main(int argc, char *argv[]) {
     cout << "Server A: r1, r2, r3 are " << r1 << ", " << r2 << ", " << r3 << " respectively, satisfying r1+r2+r3 = 0 (mod plain_modulus)." << endl;
     cout << endl;
 
-    // PirReply reply_A = server_A.generate_reply(query_A, 0);
-    // PirReply reply_B = server_B.generate_reply(query_B, 0);
-    // PirReply reply_C = server_C.generate_reply(query_C, 0);
-    PirReply reply_A = server_A.generate_reply_with_add_confusion(query_A, 0, r1);
-    PirReply reply_B = server_B.generate_reply_with_add_confusion(query_B, 0, r2);
-    PirReply reply_C = server_C.generate_reply_with_add_confusion(query_C, 0, r3);
+    // PirReply reply_A = server_A.generate_reply(query, 0);
+    // PirReply reply_B = server_B.generate_reply(query, 0);
+    // PirReply reply_C = server_C.generate_reply(query, 0);
+    PirReply reply_A = server_A.generate_reply_with_add_confusion(query, 0, r1);
+    PirReply reply_B = server_B.generate_reply_with_add_confusion(query, 0, r2);
+    PirReply reply_C = server_C.generate_reply_with_add_confusion(query, 0, r3);
     cout << "Servers: Generated replies utilizing additive confusion." << endl;
 
-    vector<uint8_t> elems_A = client.decode_reply(reply_A, fv_offset_A);
-    vector<uint8_t> elems_B = client.decode_reply(reply_B, fv_offset_B);
-    vector<uint8_t> elems_C = client.decode_reply(reply_C, fv_offset_C);
+    // vector<uint8_t> elems_A = client.decode_reply(reply_A, fv_offset);
+    // vector<uint8_t> elems_B = client.decode_reply(reply_B, fv_offset);
+    // vector<uint8_t> elems_C = client.decode_reply(reply_C, fv_offset);
+    vector<PirReply> replies({reply_A, reply_B, reply_C});
+    vector<uint8_t> elems_deconfused = client.deconfuse_and_decode_reply(replies, fv_offset);
 
 #ifdef DEBUG
-    cout << "elems_A + elems_B + elems_C:" << endl;
+    cout << "elems_deconfused:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
-             << (int)elems_A[i * (size_per_item/64) + j] + 
-                (int)elems_B[i * (size_per_item/64) + j] + 
-                (int)elems_B[i * (size_per_item/64) + j]
+             << (int)elems_deconfused[i * (size_per_item/64) + j]
              << " ";
         }
         cout << endl;
     }
+
     cout << "db_A + db_B + db_C:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
-             << (int)db_A_copy.get()[(elem_index_A * size_per_item) + i * (size_per_item/64) + j] + 
-                (int)db_B_copy.get()[(elem_index_B * size_per_item) + i * (size_per_item/64) + j] + 
-                (int)db_C_copy.get()[(elem_index_C * size_per_item) + i * (size_per_item/64) + j]
+             << (int)db_A_copy.get()[(elem_index * size_per_item) + i * (size_per_item/64) + j]
+                + (int)db_B_copy.get()[(elem_index * size_per_item) + i * (size_per_item/64) + j]
+                + (int)db_C_copy.get()[(elem_index * size_per_item) + i * (size_per_item/64) + j]
              << " ";
         }
         cout << endl;

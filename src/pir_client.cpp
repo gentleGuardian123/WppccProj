@@ -351,3 +351,34 @@ vector<vector<uint8_t>> PIRClient::decode_batch_reply(vector<PirReply> &batch_re
     return elems;
 }
 
+vector<uint8_t> PIRClient::deconfuse_and_decode_reply(vector<PirReply> &replies, uint64_t offset) {
+    uint64_t mod = enc_params_.plain_modulus().value();
+    uint32_t logt = floor(log2(enc_params_.plain_modulus().value()));
+    uint32_t N = enc_params_.poly_modulus_degree();
+    uint64_t ele_per_ptxt = pir_params_.elements_per_plaintext;
+    uint64_t ele_size = pir_params_.ele_size;
+    uint64_t coeff_per_ele = coefficients_per_element(logt, ele_size);
+    uint64_t coeff_per_ptxt = ele_per_ptxt * coeff_per_ele;
+    assert(coeff_per_ptxt <= N);
+
+    Plaintext result;
+    vector<uint64_t> result_coeffs;
+    vector<vector<uint64_t>> decoded_coeffs;
+
+    for (auto reply: replies) {
+        Plaintext decoded_reply = decode_reply(reply);
+        vector<uint64_t> coeffs;
+        encoder_->decode(decoded_reply, coeffs);
+        decoded_coeffs.push_back(coeffs);
+    }
+    for (uint64_t i = 0UL; i < coeff_per_ptxt; i ++) {
+        uint64_t temp = 0UL;
+        for (uint64_t j = 0UL; j < decoded_coeffs.size(); j ++) {
+            temp = (temp + decoded_coeffs[j][i]) % mod;
+        }
+        result_coeffs.push_back(temp);
+    }
+    vector_to_plaintext(result_coeffs, result);
+
+    return extract_bytes(result, offset);
+}
