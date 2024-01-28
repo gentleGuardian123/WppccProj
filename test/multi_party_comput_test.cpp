@@ -82,7 +82,8 @@ int main(int argc, char *argv[]) {
     uint64_t r1, r2, r3;
     server_A.gen_rand_trio(r1, r2, r3);
     cout << "Server A: Generated random number triple, and output it to Server B,C." << endl;
-    cout << "Server A: r1, r2, r3 are " << r1 << ", " << r2 << ", " << r3 << " respectively, satisfying r1+r2+r3 = 0 (mod plain_modulus)." << endl;
+    cout << "Server A: r1, r2, r3 are " << r1 << ", " << r2 << ", " << r3 << " respectively, satisfying r1+r2+r3 = "
+         << (r1 + r2 + r3) % enc_params.plain_modulus().value() << " (mod plain_modulus)." << endl;
     cout << endl;
 
     // PirReply reply_A = server_A.generate_reply(query, 0);

@@ -452,10 +452,10 @@ void PIRServer::gen_rand_trio(uint64_t &dest_rand1, uint64_t &dest_rand2, uint64
     uint64_t mod = enc_params_.plain_modulus().value();
     dest_rand1 = dis(gen) % mod;
     dest_rand2 = dis(gen) % mod;
-    dest_rand3 = (mod - dest_rand1 - dest_rand2) % mod;
-    // cout << "r1+r2+r3: " << dest_rand1 + dest_rand2 + dest_rand3 << endl;
-    // cout << "plain_modulus: " << mod << endl;
-    // cout << "r1+r2+r3 (mod plain_modulus): " << (dest_rand1+dest_rand2+dest_rand3) % mod << endl;
+    dest_rand3 = (2 * mod - dest_rand1 - dest_rand2) % mod;
+    // cout << "Server: r1+r2+r3: " << dest_rand1 + dest_rand2 + dest_rand3 << endl;
+    // cout << "Server: Modulus in `gen_rand_trio` is: " << mod << endl;
+    // cout << "Server: r1+r2+r3 (mod plain_modulus): " << (dest_rand1+dest_rand2+dest_rand3) % mod << endl;
 }
 
 void PIRServer::output_rand_vec_to_send(vector<uint64_t> &rand_vec_to_send1, vector<uint64_t> &rand_vec_to_send2) {
@@ -587,18 +587,18 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
     Ciphertext temp, _temp;
 
     for (uint64_t k = 0; k < product; k++) {
-      evaluator_->multiply_plain(expanded_query[0], rand_pt, _temp);
+      // evaluator_->multiply_plain(expanded_query[0], rand_pt, _temp);
       evaluator_->multiply_plain(expanded_query[0], (*cur)[k],
                                  intermediateCtxts[k]);
-      evaluator_->add_inplace(intermediateCtxts[k], _temp);
+      // evaluator_->add_inplace(intermediateCtxts[k], _temp);
 
       for (uint64_t j = 1; j < n_i; j++) {
         evaluator_->multiply_plain(expanded_query[j], (*cur)[k + j * product],
                                    temp);
-        evaluator_->multiply_plain(expanded_query[j], rand_pt, _temp);
+        // evaluator_->multiply_plain(expanded_query[j], rand_pt, _temp);
         evaluator_->add_inplace(intermediateCtxts[k],
                                 temp); // Adds to first component.
-        evaluator_->add_inplace(intermediateCtxts[k], _temp);
+        // evaluator_->add_inplace(intermediateCtxts[k], _temp);
       }
     }
 
