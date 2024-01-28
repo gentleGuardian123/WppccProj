@@ -1,5 +1,11 @@
 #include "pir_client.hpp"
 
+#define DEBUG
+
+#ifdef DEBUG
+    #include <iomanip>
+#endif
+
 using namespace std;
 using namespace seal;
 using namespace seal::util;
@@ -198,19 +204,19 @@ Plaintext PIRClient::decode_reply(PirReply &reply) {
     for (uint32_t j = 0; j < temp.size(); j++) {
       Plaintext ptxt;
       decryptor_->decrypt(temp[j], ptxt);
-#ifdef DEBUG
-      cout << "Client: reply noise budget = "
-           << decryptor_->invariant_noise_budget(temp[j]) << endl;
-#endif
+// #ifdef DEBUG
+//       cout << "Client: reply noise budget = "
+//            << decryptor_->invariant_noise_budget(temp[j]) << endl;
+// #endif
 
       // cout << "decoded (and scaled) plaintext = " << ptxt.to_string() <<
       // endl;
       tempplain.push_back(ptxt);
 
-#ifdef DEBUG
-      cout << "recursion level : " << i << " noise budget :  ";
-      cout << decryptor_->invariant_noise_budget(temp[j]) << endl;
-#endif
+// #ifdef DEBUG
+//       cout << "recursion level : " << i << " noise budget :  ";
+//       cout << decryptor_->invariant_noise_budget(temp[j]) << endl;
+// #endif
 
       if ((j + 1) % (exp_ratio * ciphertext_size) == 0 && j > 0) {
         // Combine into one ciphertext.
@@ -371,14 +377,48 @@ vector<uint8_t> PIRClient::deconfuse_and_decode_replies(vector<PirReply> &replie
         encoder_->decode(decoded_reply, coeffs);
         decoded_coeffs.push_back(coeffs);
     }
+    #ifdef DEBUG
+        size_t cnt = 0;
+        cout << "Client: `deconfuse_and_decode_replies` debug:" << endl;
+        for (auto reply: replies) {
+            cout << "decoding reply " << ++cnt << "..." << endl;
+            Plaintext decoded_reply = decode_reply(reply);
+            vector<uint8_t> elems = extract_bytes(decoded_reply, offset);
+            for (int i = 0; i < ele_size / 64; i ++) {
+                for (int j = 0; j < 64; j ++) {
+                    cout << setfill('0') << setw(2) << hex
+                     << (int)elems[i * (ele_size/64) + j]
+                     << " ";
+                }
+                cout << endl;
+            }
+        }
+
+        cnt = 0;
+        for (auto coeffs: decoded_coeffs) {
+            cout << "retaining elems from decoded coeffs " << ++cnt << "..." << endl;
+            Plaintext pt;
+            encoder_->encode(coeffs, pt);
+            vector<uint8_t> elems = extract_bytes(pt, offset);
+            for (int i = 0; i < ele_size / 64; i ++) {
+                for (int j = 0; j < 64; j ++) {
+                    cout << setfill('0') << setw(2) << hex
+                     << (int)elems[i * (ele_size/64) + j]
+                     << " ";
+                }
+                cout << endl;
+            }
+        }
+    #endif
     for (uint64_t i = 0UL; i < coeff_per_ptxt; i ++) {
         uint64_t temp = 0UL;
         for (uint64_t j = 0UL; j < decoded_coeffs.size(); j ++) {
             temp = (temp + decoded_coeffs[j][i]) % mod;
+            // temp = (temp + decoded_coeffs[j][i]);
         }
         result_coeffs.push_back(temp);
     }
-    vector_to_plaintext(result_coeffs, result);
+    encoder_->encode(result_coeffs, result);
 
     return extract_bytes(result, offset);
 }

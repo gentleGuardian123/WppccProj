@@ -57,6 +57,14 @@ int main(int argc, char *argv[]) {
             db_A_copy.get()[(i * size_per_item) + j] = val;
             db_B_copy.get()[(i * size_per_item) + j] = val;
             db_C_copy.get()[(i * size_per_item) + j] = val;
+            #ifdef DEBUG
+                // db_A.get()[(i * size_per_item) + j] = 1;
+                // db_A_copy.get()[(i * size_per_item) + j] = 1;
+                // db_B.get()[(i * size_per_item) + j] = 1;
+                // db_B_copy.get()[(i * size_per_item) + j] = 1;
+                // db_C.get()[(i * size_per_item) + j] = 1;
+                // db_C_copy.get()[(i * size_per_item) + j] = 1;
+            #endif
         }
     }
     cout << "Generated random database successfully." << endl;
@@ -86,22 +94,17 @@ int main(int argc, char *argv[]) {
          << (r1 + r2 + r3) % enc_params.plain_modulus().value() << " (mod plain_modulus)." << endl;
     cout << endl;
 
-    // PirReply reply_A = server_A.generate_reply(query, 0);
-    // PirReply reply_B = server_B.generate_reply(query, 0);
-    // PirReply reply_C = server_C.generate_reply(query, 0);
     PirReply reply_A = server_A.generate_reply_with_add_confusion(query, 0, r1);
     PirReply reply_B = server_B.generate_reply_with_add_confusion(query, 0, r2);
     PirReply reply_C = server_C.generate_reply_with_add_confusion(query, 0, r3);
     cout << "Servers: Generated replies utilizing additive confusion." << endl;
 
-    // vector<uint8_t> elems_A = client.decode_reply(reply_A, fv_offset);
-    // vector<uint8_t> elems_B = client.decode_reply(reply_B, fv_offset);
-    // vector<uint8_t> elems_C = client.decode_reply(reply_C, fv_offset);
     vector<PirReply> replies({reply_A, reply_B, reply_C});
     vector<uint8_t> elems_deconfused = client.deconfuse_and_decode_replies(replies, fv_offset);
+    cout << "Client: Deconfused and decoded replies." << endl;
+    cout << endl;
 
-#ifdef DEBUG
-    cout << "elems_deconfused:" << endl;
+    cout << "Client: Results from deconfused and decoded replies:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
@@ -111,7 +114,7 @@ int main(int argc, char *argv[]) {
         cout << endl;
     }
 
-    cout << "db_A + db_B + db_C:" << endl;
+    cout << "Client: Original data (db_A + db_B + db_C):" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
@@ -122,6 +125,17 @@ int main(int argc, char *argv[]) {
         }
         cout << endl;
     }
+
+#ifdef DEBUG
+    size_t differ = 0;
+    for (int i = 0; i < size_per_item; i ++) {
+        if (elems_deconfused[i] != (db_A_copy.get()[i] + db_B_copy.get()[i] + db_C_copy.get()[i])) {
+            differ ++;
+        }
+    }
+    cout << "Client: Wrong! number of different data piece: " << dec << differ << endl;
 #endif
+
+    cout << "Client: Correct!" << endl;
 
 }

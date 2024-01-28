@@ -481,7 +481,7 @@ Plaintext PIRServer::gen_rand_pt(uint64_t rand_num) {
         coefficients[(i + 1) * coeff_per_ele - 1] = rand_num;
     }
     Plaintext rand_pt;
-    vector_to_plaintext(coefficients, rand_pt);
+    encoder_->encode(coefficients, rand_pt);
 
     return rand_pt;
 }
@@ -587,18 +587,18 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
     Ciphertext temp, _temp;
 
     for (uint64_t k = 0; k < product; k++) {
-      // evaluator_->multiply_plain(expanded_query[0], rand_pt, _temp);
+      evaluator_->multiply_plain(expanded_query[0], rand_pt, _temp);
       evaluator_->multiply_plain(expanded_query[0], (*cur)[k],
                                  intermediateCtxts[k]);
-      // evaluator_->add_inplace(intermediateCtxts[k], _temp);
+      evaluator_->add_inplace(intermediateCtxts[k], _temp);
 
       for (uint64_t j = 1; j < n_i; j++) {
         evaluator_->multiply_plain(expanded_query[j], (*cur)[k + j * product],
                                    temp);
-        // evaluator_->multiply_plain(expanded_query[j], rand_pt, _temp);
+        evaluator_->multiply_plain(expanded_query[j], rand_pt, _temp);
         evaluator_->add_inplace(intermediateCtxts[k],
                                 temp); // Adds to first component.
-        // evaluator_->add_inplace(intermediateCtxts[k], _temp);
+        evaluator_->add_inplace(intermediateCtxts[k], _temp);
       }
     }
 
