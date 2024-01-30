@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     }
 
     // decode batch relpy.
-    vector<vector<uint8_t>> elems = client.decode_batch_reply(batch_pir_reply, elem_index_with_ptr);
+    vector<vector<uint8_t>> elems = client.debatch_reply(batch_pir_reply, elem_index_with_ptr);
 
     assert(elems.size() == desired_index_vec.size());
     for ( auto it = elems.begin(); it != elems.end(); it ++ ) {

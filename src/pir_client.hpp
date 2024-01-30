@@ -27,7 +27,7 @@ public:
                                        std::uint64_t offset);
   std::vector<uint8_t> extract_bytes(seal::Plaintext pt, std::uint64_t offset);
 
-  std::vector<std::vector<uint8_t>> decode_batch_reply(std::vector<PirReply> &batch_reply, 
+  std::vector<std::vector<uint8_t>> debatch_reply(std::vector<PirReply> &batch_reply, 
                                                        std::vector<Index> &elem_index_with_ptr);
 
   std::vector<uint8_t> decode_reply(PirReply &reply, uint64_t offset);

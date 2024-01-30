@@ -345,7 +345,7 @@ vector<PirQuery> PIRClient::generate_batch_query(vector<uint64_t> &desired_index
   
 }
 
-vector<vector<uint8_t>> PIRClient::decode_batch_reply(vector<PirReply> &batch_reply, vector<Index> &elem_index_with_ptr) {
+vector<vector<uint8_t>> PIRClient::debatch_reply(vector<PirReply> &batch_reply, vector<Index> &elem_index_with_ptr) {
     vector<vector<uint8_t>> elems;
 
     for (auto it = elem_index_with_ptr.begin(); it < elem_index_with_ptr.end(); it++) {
