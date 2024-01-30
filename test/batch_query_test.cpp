@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     list<FvInfo> fv_info_list;
     vector<PirQuery> batch_pir_query;
     batch_pir_query = client.generate_batch_query(desired_index_vec, elem_index_with_ptr, fv_info_list);
-    cout << "Main: Size of batch pir query is " << batch_pir_query.size() << endl;
+    cout << "Main: Number of batched pir queries is " << batch_pir_query.size() << endl;
 
 #ifdef DEBUG
     for (auto it = fv_info_list.begin(); it != fv_info_list.end(); it ++ ) {

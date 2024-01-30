@@ -19,3 +19,7 @@ add_test(NAME gen_rand_pt_test COMMAND gen_rand_pt_test)
 add_executable(multi_party_comput_test multi_party_comput_test.cpp)
 target_link_libraries(multi_party_comput_test pir)
 add_test(NAME multi_party_comput_test COMMAND multi_party_comput_test)
+
+add_executable(batch_mpc_query_test batch_mpc_query_test.cpp)
+target_link_libraries(batch_mpc_query_test pir)
+add_test(NAME batch_mpc_query_test COMMAND batch_mpc_query_test)

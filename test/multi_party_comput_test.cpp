@@ -5,9 +5,11 @@
 
 #include <seal/seal.h>
 #include <iomanip>
-#include <fstream>
 
 // #define DEBUG
+#ifdef DEBUG
+    #include <fstream>
+#endif
 
 using namespace std;
 using namespace seal;
@@ -68,7 +70,7 @@ int main(int argc, char *argv[]) {
             #endif
         }
     }
-    cout << "Generated random database successfully." << endl;
+    cout << "Main: Generated random database successfully." << endl;
     cout << endl;
 
     server_A.set_database(move(db_A), number_of_items, size_per_item);
