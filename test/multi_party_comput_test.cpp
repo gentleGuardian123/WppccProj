@@ -5,8 +5,9 @@
 
 #include <seal/seal.h>
 #include <iomanip>
+#include <fstream>
 
-#define DEBUG
+// #define DEBUG
 
 using namespace std;
 using namespace seal;
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]) {
     uint64_t number_of_items = (1UL << dim_of_items_number);
     uint64_t size_per_item = 1024; // in bytes
     uint32_t N = 4096;
-    uint32_t logt = 20;
+    uint32_t logt = 16;
     uint32_t d = 1;
     bool use_symmetric = true; 
     bool use_batching = true;  
@@ -127,15 +128,44 @@ int main(int argc, char *argv[]) {
     }
 
 #ifdef DEBUG
+    ofstream debuglog;
+    debuglog.open("../src/debug/debug_log2.txt");
+    debuglog << "Client: Results from deconfused and decoded replies:" << endl;
+    for (int i = 0; i < size_per_item / 64; i ++) {
+        for (int j = 0; j < 64; j ++) {
+            debuglog << setfill('0') << setw(2) << hex
+             << (int)elems_deconfused[i * (size_per_item/64) + j]
+             << " ";
+        }
+        debuglog << endl;
+    }
+
+    debuglog << "Client: Original data (db_A + db_B + db_C):" << endl;
+    for (int i = 0; i < size_per_item / 64; i ++) {
+        for (int j = 0; j < 64; j ++) {
+            debuglog << setfill('0') << setw(2) << hex
+             << (int)db_A_copy.get()[(elem_index * size_per_item) + i * (size_per_item/64) + j]
+                + (int)db_B_copy.get()[(elem_index * size_per_item) + i * (size_per_item/64) + j]
+                + (int)db_C_copy.get()[(elem_index * size_per_item) + i * (size_per_item/64) + j]
+             << " ";
+        }
+        debuglog << endl;
+    }
+    debuglog.close();
+#endif
+
     size_t differ = 0;
     for (int i = 0; i < size_per_item; i ++) {
-        if (elems_deconfused[i] != (db_A_copy.get()[i] + db_B_copy.get()[i] + db_C_copy.get()[i])) {
+        if ((int)elems_deconfused[i] != 
+                ((int)db_A_copy.get()[elem_index*size_per_item + i]
+                 + (int)db_B_copy.get()[elem_index*size_per_item + i]
+                 + (int)db_C_copy.get()[elem_index*size_per_item + i])) {
             differ ++;
         }
     }
-    cout << "Client: Wrong! number of different data piece: " << dec << differ << endl;
-#endif
-
+    if (differ) {
+        cout << "Client: Wrong! number of different data piece: " << dec << differ << endl;
+    }
     cout << "Client: Correct!" << endl;
 
 }

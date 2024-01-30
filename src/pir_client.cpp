@@ -1,9 +1,10 @@
 #include "pir_client.hpp"
 
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
     #include <iomanip>
+    #include <fstream>
 #endif
 
 using namespace std;
@@ -377,47 +378,68 @@ vector<uint8_t> PIRClient::deconfuse_and_decode_replies(vector<PirReply> &replie
         encoder_->decode(decoded_reply, coeffs);
         decoded_coeffs.push_back(coeffs);
     }
-    #ifdef DEBUG
-        size_t cnt = 0;
-        cout << "Client: `deconfuse_and_decode_replies` debug:" << endl;
-        for (auto reply: replies) {
-            cout << "decoding reply " << ++cnt << "..." << endl;
-            Plaintext decoded_reply = decode_reply(reply);
-            vector<uint8_t> elems = extract_bytes(decoded_reply, offset);
-            for (int i = 0; i < ele_size / 64; i ++) {
-                for (int j = 0; j < 64; j ++) {
-                    cout << setfill('0') << setw(2) << hex
-                     << (int)elems[i * (ele_size/64) + j]
-                     << " ";
-                }
-                cout << endl;
+#ifdef DEBUG
+    ofstream debuglog;
+    debuglog.open("../src/debug/debug_log3.txt");
+    size_t cnt = 0;
+    debuglog << "Client: `deconfuse_and_decode_replies` debug:" << endl;
+    for (auto reply: replies) {
+        debuglog << "decoding reply " << ++cnt << "..." << endl;
+        Plaintext decoded_reply = decode_reply(reply);
+        vector<uint8_t> elems = extract_bytes(decoded_reply, offset);
+        for (int i = 0; i < ele_size / 64; i ++) {
+            for (int j = 0; j < 64; j ++) {
+                debuglog << setfill('0') << setw(2) << hex
+                 << (int)elems[i * (ele_size/64) + j]
+                 << " ";
             }
+            debuglog << endl;
         }
+    }
 
-        cnt = 0;
-        for (auto coeffs: decoded_coeffs) {
-            cout << "retaining elems from decoded coeffs " << ++cnt << "..." << endl;
-            Plaintext pt;
-            encoder_->encode(coeffs, pt);
-            vector<uint8_t> elems = extract_bytes(pt, offset);
-            for (int i = 0; i < ele_size / 64; i ++) {
-                for (int j = 0; j < 64; j ++) {
-                    cout << setfill('0') << setw(2) << hex
-                     << (int)elems[i * (ele_size/64) + j]
-                     << " ";
-                }
-                cout << endl;
+    cnt = 0;
+    for (auto coeffs: decoded_coeffs) {
+        debuglog << "retaining elems from decoded coeffs " << ++cnt << "..." << endl;
+        Plaintext pt;
+        encoder_->encode(coeffs, pt);
+        vector<uint8_t> elems = extract_bytes(pt, offset);
+        for (int i = 0; i < ele_size / 64; i ++) {
+            for (int j = 0; j < 64; j ++) {
+                debuglog << setfill('0') << setw(2) << hex
+                 << (int)elems[i * (ele_size/64) + j]
+                 << " ";
             }
+            debuglog << endl;
         }
-    #endif
+    }
+    debuglog << endl;
+    debuglog.close();
+#endif
+
+#ifdef DEBUG
+    debuglog.open("../src/debug/debug_log1.txt");
+#endif
+
     for (uint64_t i = 0UL; i < coeff_per_ptxt; i ++) {
         uint64_t temp = 0UL;
         for (uint64_t j = 0UL; j < decoded_coeffs.size(); j ++) {
             temp = (temp + decoded_coeffs[j][i]) % mod;
             // temp = (temp + decoded_coeffs[j][i]);
+#ifdef DEBUG
+            if (i >= offset * coeff_per_ele && i < (offset+1) * coeff_per_ele) {
+                debuglog << dec << "j = " << j << ", i = " << i << ". temp = ";
+                debuglog << setfill('0') << setw(16) << hex << temp << endl;
+            }
+#endif
         }
         result_coeffs.push_back(temp);
     }
+
+#ifdef DEBUG
+    debuglog << endl;
+    debuglog.close();
+#endif
+
     encoder_->encode(result_coeffs, result);
 
     return extract_bytes(result, offset);
