@@ -42,6 +42,7 @@ public:
   std::vector<PirReply> gen_batch_reply(std::vector<PirQuery> &batch_pir_query, std::uint32_t client_id);
   void refresh_and_set_rand_vec(size_t batch_query_size) ;
   void gen_rand_trio(std::uint64_t &dest_rand1, std::uint64_t &dest_rand2, std::uint64_t &dest_rand3);
+  void set_rand_vec_to_use(std::vector<std::uint64_t> &rand_vec_to_use);
   void output_rand_vec_to_send(std::vector<std::uint64_t> &rand_vec_to_send1, std::vector<std::uint64_t> &rand_vec_to_send2);
   seal::Plaintext gen_rand_pt(std::uint64_t rand_num);
   

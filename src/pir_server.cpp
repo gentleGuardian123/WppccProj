@@ -459,8 +459,17 @@ void PIRServer::gen_rand_trio(uint64_t &dest_rand1, uint64_t &dest_rand2, uint64
 }
 
 void PIRServer::output_rand_vec_to_send(vector<uint64_t> &rand_vec_to_send1, vector<uint64_t> &rand_vec_to_send2) {
-    rand_vec_to_send1 = rand_vec_to_send1_;
-    rand_vec_to_send2 = rand_vec_to_send2_;
+    // rand_vec_to_send1 = rand_vec_to_send1_;
+    // rand_vec_to_send2 = rand_vec_to_send2_;
+    rand_vec_to_send1.resize(rand_vec_to_send1_.size());
+    rand_vec_to_send2.resize(rand_vec_to_send2_.size());
+    copy(rand_vec_to_send1_.begin(), rand_vec_to_send1_.end(), rand_vec_to_send1.begin());
+    copy(rand_vec_to_send2_.begin(), rand_vec_to_send2_.end(), rand_vec_to_send2.begin());
+}
+
+void PIRServer::set_rand_vec_to_use(vector<uint64_t> &rand_vec_to_use) {
+    rand_vec_to_use_.resize(rand_vec_to_use.size());
+    copy(rand_vec_to_use.begin(), rand_vec_to_use.end(), rand_vec_to_use_.begin());
 }
 
 Plaintext PIRServer::gen_rand_pt(uint64_t rand_num) {
