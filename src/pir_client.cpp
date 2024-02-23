@@ -225,7 +225,7 @@ Plaintext PIRClient::decode_reply(PirReply &reply) {
         compose_to_ciphertext(parms, tempplain, combined);
         newtemp.push_back(combined);
         tempplain.clear();
-        cout << "Client: const term of ciphertext = " << combined[0] << endl;
+        // cout << "Client: const term of ciphertext = " << combined[0] << endl;
       }
     }
     // cout << "Client: done." << endl;
@@ -299,12 +299,13 @@ Ciphertext PIRClient::get_one() {
     Above are the codes of SealPIR; below are the new codes for the current project.
  */
 
+// Input desired index vec; result stores in `elem_index_with_ptr` and `fv_info_list`.
 vector<PirQuery> PIRClient::generate_batch_query(vector<uint64_t> &desired_index_vec, vector<Index> &elem_index_with_ptr, list<FvInfo> &fv_info_list) {
 
     vector<PirQuery> batch_pir_query;
     vector<uint64_t> batch_fv_index;
   
-    for (uint64_t i = 0UL; i < desired_index_vec.size(); i ++ ) {
+    for (uint64_t i = 0UL; i < desired_index_vec.size(); i ++) {
         FvInfo fv_info;
         fv_info.index_value = desired_index_vec[i];
         fv_info_list.push_back(fv_info);
@@ -329,8 +330,12 @@ vector<PirQuery> PIRClient::generate_batch_query(vector<uint64_t> &desired_index
     for (auto &fv_info: fv_info_list) {
         uint64_t fv_index = get_fv_index(fv_info.index_value);
         fv_info.fv_offset = get_fv_offset(fv_info.index_value);
+        
+#ifdef DEBUG
         cout << "fv_info_list[].fv_index:" <<  fv_index << endl;
         cout << "batch_fv_index.back():" << batch_fv_index.back() << endl;
+#endif
+
         if (fv_index > batch_fv_index.back()) {
             batch_fv_index.push_back(fv_index);
             PirQuery query = generate_query(fv_index);
@@ -443,4 +448,22 @@ vector<uint8_t> PIRClient::deconfuse_and_decode_replies(vector<PirReply> &replie
     encoder_->encode(result_coeffs, result);
 
     return extract_bytes(result, offset);
+}
+
+vector<vector<uint8_t>> PIRClient::batch_deconfuse_and_decode_replies(vector<PirBatchReply> multi_party_batch_reply, uint32_t party_num, vector<Index> &elem_index_with_ptr) {
+    vector<vector<uint8_t>> results;
+    if (multi_party_batch_reply.size() != party_num)
+        return results;
+    
+    for (auto e : elem_index_with_ptr) {
+        vector<PirReply> multi_party_reply;
+        for (auto batch_reply : multi_party_batch_reply) {
+            multi_party_reply.push_back(batch_reply[e.fv_info_ptr->reply_id]);
+        }
+        vector<uint8_t> result = deconfuse_and_decode_replies(multi_party_reply, e.fv_info_ptr->fv_offset);
+        results.push_back(result);
+    }
+
+    return results;
+
 }

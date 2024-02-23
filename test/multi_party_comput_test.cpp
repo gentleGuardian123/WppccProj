@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     cout << "Client: Deconfused and decoded replies." << endl;
     cout << endl;
 
-    cout << "Client: Results from deconfused and decoded replies:" << endl;
+    cout << "Client: Result from deconfused and decoded replies:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
         for (int j = 0; j < 64; j ++) {
             cout << setfill('0') << setw(2) << hex
