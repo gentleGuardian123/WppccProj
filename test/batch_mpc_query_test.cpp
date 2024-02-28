@@ -106,8 +106,14 @@ int main(int argc, char *argv[]) {
     cout << endl;
 
     vector<vector<uint8_t>> results = client.batch_deconfuse_and_decode_replies(multi_party_batch_reply, 3, elem_index_with_ptr);
+    assert(results.size() == desired_index_vec.size());
+    for ( auto it = results.begin(); it != results.end(); it ++ ) {
+        assert((*it).size() == size_per_item);
+    }
+    bool failed = false;
+    cout << "Client: Deconfused and decoded batch reply." << endl;
 
-    size_t count = 0;    
+    size_t count = 0;
     for (auto result : results) {
         cout << "Client: Result from deconfused and decoded replies:" << endl;
         for (int i = 0; i < size_per_item / 64; i ++) {

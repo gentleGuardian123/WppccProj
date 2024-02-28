@@ -450,20 +450,28 @@ vector<uint8_t> PIRClient::deconfuse_and_decode_replies(vector<PirReply> &replie
     return extract_bytes(result, offset);
 }
 
+#define DEBUG_BATCH_XXX
+
 vector<vector<uint8_t>> PIRClient::batch_deconfuse_and_decode_replies(vector<PirBatchReply> multi_party_batch_reply, uint32_t party_num, vector<Index> &elem_index_with_ptr) {
     vector<vector<uint8_t>> results;
     if (multi_party_batch_reply.size() != party_num)
         return results;
+    
+#ifdef DEBUG_BATCH_XXX
+    cout << "Here" << endl;
+#endif
     
     for (auto e : elem_index_with_ptr) {
         vector<PirReply> multi_party_reply;
         for (auto batch_reply : multi_party_batch_reply) {
             multi_party_reply.push_back(batch_reply[e.fv_info_ptr->reply_id]);
         }
+#ifdef DEBUG_BATCH_XXX
+        cout << "Here" << endl;
+#endif
         vector<uint8_t> result = deconfuse_and_decode_replies(multi_party_reply, e.fv_info_ptr->fv_offset);
         results.push_back(result);
     }
 
     return results;
-
 }

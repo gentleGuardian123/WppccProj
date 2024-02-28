@@ -8,6 +8,7 @@ using namespace seal::util;
 PIRServer::PIRServer(const EncryptionParameters &enc_params,
                      const PirParams &pir_params)
     : enc_params_(enc_params), pir_params_(pir_params),
+      is_refreshed_(false),
       is_db_preprocessed_(false) {
   context_ = make_shared<SEALContext>(enc_params, true);
   evaluator_ = make_unique<Evaluator>(*context_);
@@ -470,6 +471,7 @@ void PIRServer::output_rand_vec_to_send(vector<uint64_t> &rand_vec_to_send1, vec
 void PIRServer::set_rand_vec_to_use(vector<uint64_t> &rand_vec_to_use) {
     rand_vec_to_use_.resize(rand_vec_to_use.size());
     copy(rand_vec_to_use.begin(), rand_vec_to_use.end(), rand_vec_to_use_.begin());
+    is_refreshed_ = true;
 }
 
 Plaintext PIRServer::gen_rand_pt(uint64_t rand_num) {
@@ -507,18 +509,24 @@ void PIRServer::refresh_and_set_rand_vec(size_t batch_query_size) {
         rand_vec_to_send2_.push_back(r2);
         rand_vec_to_use_.push_back(r3);
     }
+
+    is_refreshed_ = true;
 }
 
 vector<PirReply> PIRServer::gen_batch_reply(vector<PirQuery> &batch_pir_query, uint32_t client_id){
     vector<PirReply> batch_pir_reply;
-    size_t batch_query_size = batch_pir_query.size();
-    refresh_and_set_rand_vec(batch_query_size);
+    if (!is_refreshed_) {
+        cout << "Server: The random number vector is not set yet!" << endl;
+        return batch_pir_reply;
+    }
 
-    for (size_t i = 0; i < batch_query_size; i++) {
+    for (size_t i = 0; i < batch_pir_query.size(); i++) {
         uint64_t random_number = rand_vec_to_use_[i];
         PirReply reply = generate_reply_with_add_confusion(batch_pir_query[i], client_id, i);
         batch_pir_reply.push_back(reply);
     }
+
+    is_refreshed_ = false;
 
     return batch_pir_reply;
 }
@@ -568,7 +576,7 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
     }
     // cout << "Server: expansion done " << endl;
     if (expanded_query.size() != n_i) {
-      // cout << " size mismatch!!! " << expanded_query.size() << ", " << n_i << endl;
+      cout << " size mismatch!!! " << expanded_query.size() << ", " << n_i << endl;
     }
 
     // Transform expanded query to NTT, and ...
@@ -592,6 +600,8 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
 
     product /= n_i;
 
+    cout << "HERE" << endl;
+
     vector<Ciphertext> intermediateCtxts(product);
     Ciphertext temp, _temp;
 
@@ -610,6 +620,7 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
         evaluator_->add_inplace(intermediateCtxts[k], _temp);
       }
     }
+    cout << "HERE!" << endl;
 
     for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
       evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);

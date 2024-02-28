@@ -59,6 +59,7 @@ private:
   std::vector<std::uint64_t> rand_vec_to_send1_;
   std::vector<std::uint64_t> rand_vec_to_send2_;
   std::vector<std::uint64_t> rand_vec_to_use_;
+  bool is_refreshed_;
 
   // This is only used for simple_query
   seal::Ciphertext one_;
