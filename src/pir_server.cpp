@@ -253,7 +253,9 @@ PirReply PIRServer::generate_reply(PirQuery &query, uint32_t client_id) {
                                 temp); // Adds to first component.
       }
     }
-
+/* 
+    return ?
+ */
     for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
       evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
       // print intermediate ctxts?
