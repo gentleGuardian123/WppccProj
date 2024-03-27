@@ -332,8 +332,12 @@ vector<PirQuery> PIRClient::generate_batch_query(vector<uint64_t> &desired_index
         fv_info.fv_offset = get_fv_offset(fv_info.index_value);
         
 #ifdef DEBUG
+
+#ifdef DEBUG
         cout << "fv_info_list[].fv_index:" <<  fv_index << endl;
         cout << "batch_fv_index.back():" << batch_fv_index.back() << endl;
+#endif
+
 #endif
 
         if (fv_index > batch_fv_index.back()) {
