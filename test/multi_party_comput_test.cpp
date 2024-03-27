@@ -207,17 +207,17 @@ int main(int argc, char *argv[]) {
         cout << "Client: Correct!" << endl;
     }
 
-    cout << "Main: PIRServer pre-processing time: " << time_pre_us / 1000 << " ms"
+    cout << "Main: PIRServer pre-processing time: " << dec << time_pre_us / 1000 << " ms"
             << endl;
-    cout << "Main: PIRClient query generation time: " << time_query_us / 1000
+    cout << "Main: PIRClient query generation time: " << dec << time_query_us / 1000
             << " ms" << endl;
     cout << "Main: PIRClient serialized query generation time: "
-            << time_s_query_us / 1000 << " ms" << endl;
-    cout << "Main: PIRServer query deserialization time: " << time_deserial_us
+            << dec << time_s_query_us / 1000 << " ms" << endl;
+    cout << "Main: PIRServer query deserialization time: " << dec << time_deserial_us
             << " us" << endl;
-    cout << "Main: PIRServer reply generation time: " << time_server_us / 1000
+    cout << "Main: PIRServer reply generation time: " << dec << time_server_us / 1000
             << " ms" << endl;
-    cout << "Main: PIRClient answer decode time: " << time_decode_us / 1000
+    cout << "Main: PIRClient answer decode time: " << dec << time_decode_us / 1000
             << " ms" << endl;
     cout << "Main: Query size: " << dec << query_size << " bytes" << endl;
     cout << "Main: Reply num ciphertexts: " << reply_A.size() + reply_B.size() + reply_C.size() << endl;
