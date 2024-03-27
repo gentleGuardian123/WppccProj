@@ -219,8 +219,8 @@ int main(int argc, char *argv[]) {
             << " ms" << endl;
     cout << "Main: PIRClient answer decode time: " << time_decode_us / 1000
             << " ms" << endl;
-    cout << "Main: Query size: " << query_size << " bytes" << endl;
+    cout << "Main: Query size: " << dec << query_size << " bytes" << endl;
     cout << "Main: Reply num ciphertexts: " << reply_A.size() + reply_B.size() + reply_C.size() << endl;
-    cout << "Main: Reply size: " << reply_size << " bytes" << endl;
+    cout << "Main: Reply size: " << dec << reply_size << " bytes" << endl;
 
 }

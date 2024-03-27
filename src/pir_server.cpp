@@ -604,8 +604,6 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
 
     product /= n_i;
 
-    cout << "HERE" << endl;
-
     vector<Ciphertext> intermediateCtxts(product);
     Ciphertext temp, _temp;
 
@@ -624,7 +622,6 @@ PirReply PIRServer::generate_reply_with_add_confusion(PirQuery &query, uint32_t 
         evaluator_->add_inplace(intermediateCtxts[k], _temp);
       }
     }
-    cout << "HERE!" << endl;
 
     for (uint32_t jj = 0; jj < intermediateCtxts.size(); jj++) {
       evaluator_->transform_from_ntt_inplace(intermediateCtxts[jj]);
