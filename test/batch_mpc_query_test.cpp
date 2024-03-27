@@ -12,12 +12,12 @@ using namespace seal;
 int main(int argc, char *argv[]) {
     uint8_t dim_of_items_number = 12;
     uint64_t number_of_items = (1UL << dim_of_items_number);
-    uint64_t size_per_item = 1024; // in bytes
+    uint64_t size_per_item = 1024; // in byte
     uint32_t N = 4096;
     uint32_t logt = 16;
     uint32_t d = 1;
     bool use_symmetric = true; 
-    bool use_batching = true;  
+    bool use_batching = true;
     bool use_recursive_mod_switching = true;
     EncryptionParameters enc_params(scheme_type::bfv);
     PirParams pir_params;
