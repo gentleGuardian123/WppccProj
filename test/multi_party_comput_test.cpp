@@ -5,12 +5,14 @@
 
 #include <seal/seal.h>
 #include <iomanip>
+#include <chrono>
 
 // #define DEBUG
 #ifdef DEBUG
     #include <fstream>
 #endif
 
+using namespace std::chrono;
 using namespace std;
 using namespace seal;
 
@@ -73,12 +75,15 @@ int main(int argc, char *argv[]) {
     cout << "Main: Generated random database successfully." << endl;
     cout << endl;
 
+    auto time_pre_s = high_resolution_clock::now();
     server_A.set_database(move(db_A), number_of_items, size_per_item);
     server_B.set_database(move(db_B), number_of_items, size_per_item);
     server_C.set_database(move(db_C), number_of_items, size_per_item);
     server_A.preprocess_database();
     server_B.preprocess_database();
     server_C.preprocess_database();
+    auto time_pre_e = high_resolution_clock::now();
+    auto time_pre_us = duration_cast<microseconds>(time_pre_e - time_pre_s).count();
 
     uint64_t elem_index = rd() % number_of_items;
     uint64_t fv_index = client.get_fv_index(elem_index);
@@ -87,8 +92,30 @@ int main(int argc, char *argv[]) {
     cout << "Main: Desired element index for Server A,B,C: " << elem_index << "; fv index: " << fv_index << "; fv offset: " << fv_offset << "." << endl; 
     cout << endl;
 
+    auto time_query_s = high_resolution_clock::now();
     PirQuery query = client.generate_query(fv_index);
+    auto time_query_e = high_resolution_clock::now();
+    auto time_query_us = duration_cast<microseconds>(time_query_e - time_query_s).count();
 
+
+    stringstream client_stream;
+    stringstream server_stream;
+    auto time_s_query_s = high_resolution_clock::now();
+    int query_size = client.generate_serialized_query(elem_index, client_stream);
+    auto time_s_query_e = high_resolution_clock::now();
+    auto time_s_query_us =
+        duration_cast<microseconds>(time_s_query_e - time_s_query_s).count();
+    cout << "Main: Query serialized." << endl;
+
+    auto time_deserial_s = high_resolution_clock::now();
+    PirQuery deserialized_query = server_A.deserialize_query(client_stream);
+    auto time_deserial_e = high_resolution_clock::now();
+    auto time_deserial_us =
+         duration_cast<microseconds>(time_deserial_e - time_deserial_s).count();
+    cout << "Main: Query deserialized." << endl;
+
+
+    auto time_server_s = high_resolution_clock::now();
     cout << "Main: Assume Server A is the host server generating random numbers for confusion." << endl;
     uint64_t r1, r2, r3;
     server_A.gen_rand_trio(r1, r2, r3);
@@ -101,11 +128,20 @@ int main(int argc, char *argv[]) {
     PirReply reply_B = server_B.generate_reply_with_add_confusion(query, 0, r2);
     PirReply reply_C = server_C.generate_reply_with_add_confusion(query, 0, r3);
     cout << "Servers: Generated replies utilizing additive confusion." << endl;
+    auto time_server_e = high_resolution_clock::now();
+    auto time_server_us = duration_cast<microseconds>(time_server_e - time_server_s).count();
 
+    int reply_size = server_A.serialize_reply(reply_A, server_stream);
+    reply_size += server_B.serialize_reply(reply_B, server_stream);
+    reply_size += server_C.serialize_reply(reply_C, server_stream);
+
+    auto time_decode_s = chrono::high_resolution_clock::now();
     vector<PirReply> replies({reply_A, reply_B, reply_C});
     vector<uint8_t> elems_deconfused = client.deconfuse_and_decode_replies(replies, fv_offset);
     cout << "Client: Deconfused and decoded replies." << endl;
     cout << endl;
+    auto time_decode_e = chrono::high_resolution_clock::now();
+    auto time_decode_us = duration_cast<microseconds>(time_decode_e - time_decode_s).count();
 
     cout << "Client: Result from deconfused and decoded replies:" << endl;
     for (int i = 0; i < size_per_item / 64; i ++) {
@@ -167,7 +203,24 @@ int main(int argc, char *argv[]) {
     }
     if (differ) {
         cout << "Client: Wrong! number of different data piece: " << dec << differ << endl;
+    } else {
+        cout << "Client: Correct!" << endl;
     }
-    cout << "Client: Correct!" << endl;
+
+    cout << "Main: PIRServer pre-processing time: " << time_pre_us / 1000 << " ms"
+            << endl;
+    cout << "Main: PIRClient query generation time: " << time_query_us / 1000
+            << " ms" << endl;
+    cout << "Main: PIRClient serialized query generation time: "
+            << time_s_query_us / 1000 << " ms" << endl;
+    cout << "Main: PIRServer query deserialization time: " << time_deserial_us
+            << " us" << endl;
+    cout << "Main: PIRServer reply generation time: " << time_server_us / 1000
+            << " ms" << endl;
+    cout << "Main: PIRClient answer decode time: " << time_decode_us / 1000
+            << " ms" << endl;
+    cout << "Main: Query size: " << query_size << " bytes" << endl;
+    cout << "Main: Reply num ciphertexts: " << reply_A.size() + reply_B.size() + reply_C.size() << endl;
+    cout << "Main: Reply size: " << reply_size << " bytes" << endl;
 
 }
