@@ -3,17 +3,23 @@
 #include "pir_client.hpp"
 
 #include <seal/seal.h>
+#include <chrono>
 
 // #define DEBUG
 
 using namespace std;
 using namespace seal;
+using namespace std::chrono;
+
 
 int main(int argc, char *argv[]) {
-    uint8_t dim_of_items_number = 16;
+    uint8_t dim_of_items_number = argc > 1 ? stoi(argv[1]) : 18;
     uint64_t number_of_items = (1UL << dim_of_items_number);
-    uint64_t size_per_item = 1024; // in bytes
-    uint32_t N = 4096;
+    uint64_t size_per_item = argc > 2 ? stoi(argv[2]) : 512; // in bytes
+    uint64_t batch_num = argc > 3 ? stoi(argv[3]) : 500;
+    uint8_t constant_index_rate = argc > 4 ? stoi(argv[4]) : 80; // percents
+    uint64_t constant_index_num = (uint32_t) (batch_num * constant_index_rate / 100.0);
+    uint32_t N = argc > 5 ? stoi(argv[5]) : 4096;
     uint32_t logt = 20;
     uint32_t d = 2;
     bool use_symmetric = true; 
@@ -28,6 +34,8 @@ int main(int argc, char *argv[]) {
                    use_symmetric, use_batching, use_recursive_mod_switching);
     print_seal_params(enc_params);
     print_pir_params(pir_params);
+    assert(constant_index_rate <= 100);
+    cout << "Main: The constant index rate is: " << (int)constant_index_rate << "%." << endl;
 
     PIRClient client(enc_params, pir_params);
     GaloisKeys galois_keys = client.generate_galois_keys();
@@ -46,18 +54,22 @@ int main(int argc, char *argv[]) {
         }
     }
     cout << "Main: Generated random database successfully." << endl;
+    auto time_pre_s = high_resolution_clock::now();
     server.set_database(move(db), number_of_items, size_per_item);
     server.preprocess_database();
+    auto time_pre_e = high_resolution_clock::now();
+    auto time_pre_us = duration_cast<microseconds>(time_pre_e - time_pre_s).count();
 
     // generate random 32-bit desired index vec.
     vector<uint64_t> desired_index_vec;
-    for (int i = 0; i < 10; i ++ ) {
+    for (uint64_t i = 0; i < batch_num - constant_index_num; i ++ ) {
         // discrete indices.
         desired_index_vec.push_back(rd() % number_of_items);
     }
-    for (int i = 0; i < 10; i ++ ) {
+    uint64_t start_point = rd() % (number_of_items - constant_index_num);
+    for (uint64_t i = 0; i < constant_index_num; i ++ ) {
         // constant indices.
-        desired_index_vec.push_back(i + 10000);
+        desired_index_vec.push_back(i + start_point);
     }
 
 #ifdef DEBUG
@@ -67,11 +79,14 @@ int main(int argc, char *argv[]) {
 #endif
 
     // generate batch query for these desired index vec.
+    auto time_query_s = high_resolution_clock::now();
     vector<Index> elem_index_with_ptr;
     list<FvInfo> fv_info_list;
     vector<PirQuery> batch_pir_query;
     batch_pir_query = client.generate_batch_query(desired_index_vec, elem_index_with_ptr, fv_info_list);
-    cout << "Main: Number of batched pir queries is " << batch_pir_query.size() << endl;
+    auto time_query_e = high_resolution_clock::now();
+    auto time_query_us = duration_cast<microseconds>(time_query_e - time_query_s).count();
+    cout << "Main: Number of batched pir queries is " << batch_pir_query.size() << "." << endl;
 
 #ifdef DEBUG
     for (auto it = fv_info_list.begin(); it != fv_info_list.end(); it ++ ) {
@@ -90,17 +105,52 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
+
+    stringstream client_stream;
+    stringstream server_stream;
+    auto time_s_query_s = high_resolution_clock::now();
+    int query_size = 0;
+    for (FvInfo fv: fv_info_list) {
+        query_size += client.generate_serialized_query(fv.index_value, client_stream);
+    }
+    auto time_s_query_e = high_resolution_clock::now();
+    auto time_s_query_us = duration_cast<microseconds>(time_s_query_e - time_s_query_s).count();
+    cout << "Main: Query serialized." << endl;
+
+
+    auto time_deserial_s = high_resolution_clock::now();
+    PirQuery query2 = server.deserialize_query(client_stream);
+    auto time_deserial_e = high_resolution_clock::now();
+    auto time_deserial_us = duration_cast<microseconds>(time_deserial_e - time_deserial_s).count();
+    cout << "Main: Query deserialized." << endl;
+
+
     // generate batch reply for batch query.
+    auto time_server_s = high_resolution_clock::now();
     vector<PirReply> batch_pir_reply;
-    int count = 0;
+    size_t count = 0;
     for ( auto query: batch_pir_query ) {
+        if (! (count % (batch_pir_query.size() / 10))) { cout << "Server: Generating " << count + 1 << "-th reply..." << endl; }
         PirReply reply = server.generate_reply(query, 0);
         batch_pir_reply.push_back(reply);
-        cout << "Server: generated " << ++ count << "-th reply..." << endl;
+        count ++;
+    }
+    cout << "Server: Generated " << batch_pir_reply.size() << " replies." << endl;
+    auto time_server_e = high_resolution_clock::now();
+    auto time_server_us = duration_cast<microseconds>(time_server_e - time_server_s).count();
+    
+
+    int reply_size = 0;
+    for ( PirReply reply: batch_pir_reply) {
+        reply_size += server.serialize_reply(reply, server_stream);
     }
 
+
     // decode batch relpy.
+    auto time_decode_s = chrono::high_resolution_clock::now();
     vector<vector<uint8_t>> elems = client.debatch_reply(batch_pir_reply, elem_index_with_ptr);
+    auto time_decode_e = chrono::high_resolution_clock::now();
+    auto time_decode_us = duration_cast<microseconds>(time_decode_e - time_decode_s).count();
 
     assert(elems.size() == desired_index_vec.size());
     for ( auto it = elems.begin(); it != elems.end(); it ++ ) {
@@ -124,5 +174,35 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "Main: PIR result correct!" << endl;
+
+    cout << "Main: PIRServer pre-processing time: " << time_pre_us / 1000 << " ms"
+         << endl;
+    cout << "Main: PIRClient query generation time: " << time_query_us / 1000
+         << " ms" << endl;
+    cout << "Main: PIRClient serialized query generation time: "
+         << time_s_query_us / 1000 << " ms" << endl;
+    cout << "Main: PIRServer query deserialization time: " << time_deserial_us
+         << " us" << endl;
+    cout << "Main: PIRServer reply generation time: " << time_server_us / 1000
+         << " ms" << endl;
+    cout << "Main: PIRClient answer decode time: " << time_decode_us / 1000
+         << " ms" << endl;
+    cout << "Main: Query size: " << query_size / (1024.0 * 1024.0) << " MB" << endl;
+    cout << "Main: Compressed query numbers: " << batch_pir_query.size() << endl;
+    cout << "Main: Reply size: " << reply_size / (1024.0 * 1024.0) << " MB" << endl;
+
+    if (argc > 5) {
+        cout << time_pre_us / 1000 << ","
+            << time_query_us / 1000 << ","
+            << time_s_query_us / 1000 << ","
+            << time_deserial_us << ","
+            << time_server_us / 1000 << ","
+            << time_decode_us /1000 << ","
+            << query_size / (1024.0 * 1024.0) << ","
+            << batch_pir_query.size() << ","
+            << reply_size / (1024.0 * 1024.0);
+    }
+
+    return 0;
 
 }

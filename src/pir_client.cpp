@@ -45,9 +45,9 @@ int PIRClient::generate_serialized_query(uint64_t desiredIndex,
   for (uint32_t i = 0; i < indices_.size(); i++) {
     uint32_t num_ptxts = ceil((pir_params_.nvec[i] + 0.0) / N);
     // initialize result.
-    cout << "Client: index " << i + 1 << "/ " << indices_.size() << " = "
-         << indices_[i] << endl;
-    cout << "Client: number of ctxts needed for query = " << num_ptxts << endl;
+    // cout << "Client: index " << i + 1 << "/ " << indices_.size() << " = "
+    //      << indices_[i] << endl;
+    // cout << "Client: number of ctxts needed for query = " << num_ptxts << endl;
 
     for (uint32_t j = 0; j < num_ptxts; j++) {
       pt.set_zero();
@@ -60,7 +60,7 @@ int PIRClient::generate_serialized_query(uint64_t desiredIndex,
         }
         uint64_t log_total = ceil(log2(total));
 
-        cout << "Client: Inverting " << pow(2, log_total) << endl;
+        // cout << "Client: Inverting " << pow(2, log_total) << endl;
         pt[real_index] =
             invert_mod(pow(2, log_total), enc_params_.plain_modulus());
       }

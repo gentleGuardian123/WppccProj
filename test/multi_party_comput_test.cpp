@@ -17,13 +17,14 @@ using namespace std;
 using namespace seal;
 
 int main(int argc, char *argv[]) {
-    uint8_t dim_of_items_number = 12;
+    
+    uint8_t dim_of_items_number = argc > 1 ? stoi(argv[1]) : 12;
     uint64_t number_of_items = (1UL << dim_of_items_number);
-    uint64_t size_per_item = 1024; // in bytes
-    uint32_t N = 4096;
+    uint64_t size_per_item = argc > 2 ? stoi(argv[2]) : 512; // in bytes
+    uint32_t N = argc > 3 ? stoi(argv[3]) : 4096;
     uint32_t logt = 16;
     uint32_t d = 1;
-    bool use_symmetric = true; 
+    bool use_symmetric = true;
     bool use_batching = true;  
     bool use_recursive_mod_switching = true;
     EncryptionParameters enc_params(scheme_type::bfv);
@@ -207,20 +208,32 @@ int main(int argc, char *argv[]) {
         cout << "Client: Correct!" << endl;
     }
 
-    cout << "Main: PIRServer pre-processing time: " << time_pre_us / 1000 << " ms"
+    cout << "Main: PIRServer pre-processing time: " << dec << time_pre_us / 1000 << " ms"
             << endl;
-    cout << "Main: PIRClient query generation time: " << time_query_us / 1000
-            << " ms" << endl;
-    cout << "Main: PIRClient serialized query generation time: "
-            << time_s_query_us / 1000 << " ms" << endl;
-    cout << "Main: PIRServer query deserialization time: " << time_deserial_us
+    cout << "Main: PIRClient query generation time: " << dec << time_query_us
             << " us" << endl;
-    cout << "Main: PIRServer reply generation time: " << time_server_us / 1000
+    cout << "Main: PIRClient serialized query generation time: "
+            << dec << time_s_query_us << " us" << endl;
+    cout << "Main: PIRServer query deserialization time: " << dec << time_deserial_us
+            << " us" << endl;
+    cout << "Main: PIRServer reply generation time: " << dec << time_server_us / 1000
             << " ms" << endl;
-    cout << "Main: PIRClient answer decode time: " << time_decode_us / 1000
-            << " ms" << endl;
-    cout << "Main: Query size: " << dec << query_size << " bytes" << endl;
+    cout << "Main: PIRClient answer decode time: " << dec << time_decode_us 
+            << " us" << endl;
+    cout << "Main: Query size: " << dec << query_size / 1024.0 << " KB" << endl;
     cout << "Main: Reply num ciphertexts: " << reply_A.size() + reply_B.size() + reply_C.size() << endl;
-    cout << "Main: Reply size: " << dec << reply_size << " bytes" << endl;
+    cout << "Main: Reply size: " << dec << reply_size / 1024.0 << " KB" << endl;
+
+    if (argc > 3) {
+        cout << time_pre_us / 1000 << ","
+            << time_query_us << ","
+            << time_s_query_us << ","
+            << time_deserial_us << ","
+            << time_server_us / 1000 << ","
+            << time_decode_us << ","
+            << query_size / 1024.0 << ","
+            << reply_A.size() + reply_B.size() + reply_C.size() << ","
+            << reply_size / 1024.0;
+    }
 
 }
