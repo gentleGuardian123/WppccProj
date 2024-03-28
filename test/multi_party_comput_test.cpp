@@ -209,6 +209,7 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "Main: PIRServer pre-processing time: " << dec << time_pre_us / 1000 << " ms"
+            << endl;
     cout << "Main: PIRServer pre-processing time: " << dec << time_pre_us / 1000 << " ms"
             << endl;
     cout << "Main: PIRClient query generation time: " << dec << time_query_us
@@ -217,7 +218,8 @@ int main(int argc, char *argv[]) {
             << dec << time_s_query_us << " us" << endl;
     cout << "Main: PIRServer query deserialization time: " << dec << time_deserial_us
             << " us" << endl;
-    cout << "Main: PIRServer reply generation time: " << dec << time_server_us / 1000
+    cout << "Main: PIRServer reply generation time: " << dec << time_server_us / 1000 << "ms"
+            << endl;
     cout << "Main: PIRServer reply generation time: " << dec << time_server_us / 1000
             << " ms" << endl;
     cout << "Main: PIRClient answer decode time: " << dec << time_decode_us 
